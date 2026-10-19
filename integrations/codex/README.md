@@ -14,7 +14,7 @@ Long-term memory for [Codex](https://developers.openai.com/codex), backed by
 
 ## Setup
 
-1. Create an account and an API key at https://membraince.com/portal.
+1. Create an account at https://membraince.com.
 2. Add this repository as a plugin marketplace:
 
    ```bash
@@ -22,16 +22,27 @@ Long-term memory for [Codex](https://developers.openai.com/codex), backed by
    ```
 
 3. Open the plugin directory (`/plugins` in the CLI, or **Plugins** in the app), choose the
-   MemBraince marketplace, and install **MemBraince**. Paste your API key when Codex asks you to
-   connect the MCP server.
-4. For automatic recall and save, also put the key in the `MEMBRAINCE_API_KEY` environment
-   variable (hooks run as separate commands and can't read Codex's stored connection), then
-   restart Codex.
-5. Codex runs plugin hooks only after you trust them: run `/hooks`, review the MemBraince hooks, and
+   MemBraince marketplace, and install **MemBraince**.
+4. When Codex asks you to connect MemBraince, sign in with your MemBraince account and choose the
+   project this connection saves to. If your memories are encrypted, enter an API key or your
+   recovery code once to unlock them. The connection appears in the portal as an API key; revoke it
+   there to disconnect.
+
+That gives Codex the memory tools and the `memory` skill everywhere Codex runs, including ChatGPT.
+
+### Automatic recall and save (Codex app and CLI)
+
+Hooks run as separate commands on your machine and can't use Codex's sign-in, so they need a key
+of their own:
+
+1. Create an API key at https://membraince.com/portal whose home project is the project you chose
+   when signing in, so the hooks and the memory tools use the same memories.
+2. Put it in the `MEMBRAINCE_API_KEY` environment variable and restart Codex.
+3. Codex runs plugin hooks only after you trust them: run `/hooks`, review the MemBraince hooks, and
    trust them. Codex asks again whenever a hook changes.
 
-Start a new session afterwards. The hooks need `bash` and `curl` on macOS and Linux, and Windows
-PowerShell on Windows.
+The hooks need `bash` and `curl` on macOS and Linux, and Windows PowerShell on Windows. Hooks don't
+run in ChatGPT or other cloud sessions; there, Codex uses the memory tools when you ask it to.
 
 ### Settings
 
@@ -44,15 +55,15 @@ Set these environment variables to change the defaults:
 | `MEMBRAINCE_AUTO_SAVE` | `false` turns off automatic save | `true` |
 | `MEMBRAINCE_URL` | Where the hooks send requests | `https://membraince.com` |
 
-The hooks and the memory tools always use the same memories: the key's home project and the
-default memory owner. To keep separate memories, for example per client, use a separate API key
-whose home project is that client's project.
+The hooks use the key's home project and the default memory owner. Keep the key's home project the
+same as the project you chose when signing in, and the hooks and the memory tools use the same
+memories.
 
 ## What the plugin sends
 
-The hooks send everything to `MEMBRAINCE_URL` (by default `https://membraince.com`), and the memory
-tools to `https://membraince.com`, with your API key in the `X-API-Key` header. Nothing is sent to
-any other service.
+The hooks send everything to `MEMBRAINCE_URL` (by default `https://membraince.com`) with your API
+key in the `X-API-Key` header, and the memory tools to `https://membraince.com` with the token from
+your sign-in. Nothing is sent to any other service.
 
 | When | Request | Contents |
 | --- | --- | --- |
@@ -87,7 +98,8 @@ The hook scripts in `scripts/` are short and readable: `membraince-hook.sh` (bas
 
 ## Without the plugin
 
-Add the MCP server to `~/.codex/config.toml` to get the memory tools only:
+Add the MCP server to `~/.codex/config.toml` to get the memory tools only, using an API key instead
+of signing in:
 
 ```toml
 [mcp_servers.membraince]

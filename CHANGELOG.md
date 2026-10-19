@@ -29,4 +29,7 @@
   read never deletes unsent prompts. On Windows the queue folder's permissions are limited to your
   account. Session start shares one 15-second deadline between recall and recovery. The queue's
   identity includes the server address, so a queue is never sent to a different server.
+- Codex plugin 0.4.0: the MCP server connects by signing in to MemBraince (OAuth) instead of with an API
+  key. ChatGPT and remote Codex plugins can't send custom API keys, so with 0.3.x the memory tools never
+  connected there. The hooks still use `MEMBRAINCE_API_KEY`.
 

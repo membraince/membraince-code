@@ -7,9 +7,10 @@
       "extensions": {
         "com.openai": {
           "auth": {
-            "type": "api_key",
-            "headerScheme": "custom_header",
-            "headerName": "X-API-Key"
+            "type": "oauth",
+            "client": {
+              "mode": "dcr"
+            }
           }
         }
       }
