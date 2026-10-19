@@ -16,10 +16,19 @@
       {
         "hooks": [
           {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/queue-prompt.sh\"",
+            "timeout": 5
+          },
+          {
             "type": "mcp_tool",
             "server": "plugin:membraince:membraince",
             "tool": "recall",
-            "input": { "query": "${prompt}", "limit": 5, "quiet": true },
+            "input": {
+              "query": "${prompt}",
+              "limit": 5,
+              "quiet": true
+            },
             "timeout": 10
           }
         ]

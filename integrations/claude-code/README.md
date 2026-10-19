@@ -4,8 +4,9 @@ Long-term memory for Claude Code, backed by [MemBraince](https://membraince.com)
 
 - **Recall automatically**: when a session starts, the memories most relevant to the project are
   added as context, and each prompt adds memories relevant to it (or nothing when none match).
-- **Save automatically**: before compaction and when a session ends, the messages you typed
-  since the last save are sent as one save. Claude's replies and tool output are not saved.
+- **Save automatically**: each prompt you type is kept in a queue on your machine; before
+  compaction and when a session ends, the queue is sent as one save. Only the prompts you typed
+  are ever sent for saving; Claude's replies and tool output never leave your machine.
 - **Tools**: `recall`, `remember`, and `forget` on the `membraince` MCP server, plus a `memory`
   skill for reviewing and correcting what is remembered.
 
@@ -33,7 +34,8 @@ API key in the `X-API-Key` header. Nothing is sent anywhere else.
 | --- | --- | --- |
 | A session starts | `POST /v1/integrations/claude-code/session-start` | The hook's session details, including the project folder path |
 | You send a prompt | `recall` on `/v1/mcp` | The prompt text, to search for related memories |
-| Before compaction, and when a session ends | `POST /v1/integrations/claude-code/transcript` | The lines of the transcript's last 2 MB that hold your own messages; the script filters out Claude's replies and tool results before sending |
+| You send a prompt | nothing | The prompt is added to a queue on your machine (`membraince-queue-<session>.jsonl` in the plugin's data folder) |
+| Before compaction, and when a session ends | `POST /v1/integrations/claude-code/transcript` | The queued prompts (each with its session id, project folder path, and time); the queue is cleared once the save succeeds |
 | Claude calls a tool | `recall`, `remember`, or `forget` on `/v1/mcp` | What Claude passes to the tool |
 
 Turn off "Recall automatically" or "Save automatically" to stop the first three. The scripts in
