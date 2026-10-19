@@ -26,7 +26,7 @@ What you get in a connected agent:
 | Any MCP client | Available | Memory tools over Streamable HTTP ([setup](docs/mcp.md#any-mcp-client)) |
 | [OpenAI Codex](integrations/codex) | Testing | Plugin: memory tools, automatic recall, automatic save, `memory` skill |
 | [OpenCode](integrations/opencode) | Testing | Plugin file and MCP server: memory tools, automatic recall, automatic save |
-| Cursor, Gemini CLI, Qwen Code, GitHub Copilot, OpenCode, Windsurf, Cline, Kiro, Factory Droid | In progress | Native integrations with automatic recall and save |
+| Cursor, Gemini CLI, Qwen Code, GitHub Copilot, Windsurf, Cline, Kiro, Factory Droid | In progress | Native integrations with automatic recall and save |
 | ChatGPT, Zed, Continue, Roo Code, Goose, Amp, Augment, JetBrains, Trae, Warp, Visual Studio | In progress | Memory tools plus instructions for when to use them |
 
 ## Get started
