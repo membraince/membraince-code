@@ -12,4 +12,5 @@
 - Codex plugin 0.1.1: also saves after a turn (at most every 15 minutes per session), so saving no longer depends on the 3-second session-end hook; shorter listing tagline.
 - Claude Code plugin 0.6.0 and Codex plugin 0.2.0: automatic save no longer reads the session file. The prompt hook queues each prompt you type on your machine, and saves send that queue, clearing it (and, for Codex, starting the 15-minute timer) only after the save succeeds.
 - Claude Code plugin 0.6.1 and Codex plugin 0.2.1: one save per session at a time. Saves take a per-session lock around recovery, upload, and cleanup; a save that finds another in progress steps aside, and a lock left by a crashed save expires after 2 minutes.
+- Claude Code plugin 0.6.2 and Codex plugin 0.2.2: no prompt can be lost between queueing and saving. A brief queue lock covers adding a prompt and a save taking the queue (never the upload), and a failed save keeps its prompts pending instead of copying them back over the queue.
 
