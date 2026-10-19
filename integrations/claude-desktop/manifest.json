@@ -1,0 +1,91 @@
+{
+  "manifest_version": "0.3",
+  "name": "membraince",
+  "display_name": "MemBraince",
+  "version": "0.3.2",
+  "description": "Long-term memory for Claude: recall what matters and remember durable facts, preferences, and decisions across conversations.",
+  "long_description": "MemBraince stores your memories with the conversation each one came from, and corrections never erase history. Claude can recall relevant memories, remember new facts, and forget memories you ask it to. Requires a MemBraince API key from https://membraince.com/portal.",
+  "author": {
+    "name": "1001636998 ONTARIO INC.",
+    "url": "https://membraince.com"
+  },
+  "homepage": "https://membraince.com",
+  "documentation": "https://github.com/membraince/membraince-code/blob/main/integrations/claude-desktop/README.md",
+  "icon": "icon.png",
+  "tools": [
+    {
+      "name": "recall",
+      "description": "Search your long-term memory."
+    },
+    {
+      "name": "remember",
+      "description": "Save a fact, preference, decision, or correction."
+    },
+    {
+      "name": "forget",
+      "description": "Delete a memory by id."
+    }
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
+      "env": {
+        "MEMBRAINCE_API_KEY": "${user_config.api_key}",
+        "MEMBRAINCE_USER": "${user_config.user_id}",
+        "MEMBRAINCE_URL": "${user_config.server_url}",
+        "MEMBRAINCE_PROJECT": "${user_config.project}"
+      }
+    }
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "MemBraince API key",
+      "description": "Create one at https://membraince.com/portal (starts with mb_live_).",
+      "sensitive": true,
+      "required": true
+    },
+    "user_id": {
+      "type": "string",
+      "title": "Memory owner",
+      "description": "Whose memories these are inside your account. Use the same value as in Claude Code to share memories.",
+      "default": "default"
+    },
+    "server_url": {
+      "type": "string",
+      "title": "Server URL",
+      "description": "MemBraince MCP endpoint.",
+      "default": "https://membraince.com/v1/mcp"
+    },
+    "project": {
+      "type": "string",
+      "title": "Project",
+      "description": "Optional. A project name from the portal to save to and recall from. Leave empty to save to the key's home project and recall from every project linked to the key.",
+      "default": ""
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "license": "MIT",
+  "support": "https://membraince.com/support",
+  "privacy_policies": [
+    "https://membraince.com/privacy"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/membraince/membraince-code"
+  }
+}

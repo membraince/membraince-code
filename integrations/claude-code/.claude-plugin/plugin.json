@@ -1,0 +1,62 @@
+{
+  "name": "membraince",
+  "displayName": "MemBraince",
+  "version": "0.5.0",
+  "description": "Long-term memory for Claude Code: recalls what matters when a session starts and with each prompt, and saves what you tell Claude across sessions.",
+  "author": {
+    "name": "1001636998 ONTARIO INC."
+  },
+  "homepage": "https://membraince.com",
+  "repository": "https://github.com/membraince/membraince-code",
+  "keywords": [
+    "memory",
+    "mcp",
+    "long-term-memory",
+    "recall"
+  ],
+  "userConfig": {
+    "api_key": {
+      "type": "string",
+      "title": "MemBraince API key",
+      "description": "Create one at https://membraince.com/portal (starts with mb_live_).",
+      "sensitive": true,
+      "required": true
+    },
+    "user_id": {
+      "type": "string",
+      "title": "Memory owner",
+      "description": "Whose memories these are, inside your account. Use a different value to keep separate memories for different people or agents.",
+      "default": "default"
+    },
+    "server_url": {
+      "type": "string",
+      "title": "Server URL",
+      "description": "MemBraince MCP endpoint.",
+      "default": "https://membraince.com/v1/mcp"
+    },
+    "auto_recall": {
+      "type": "boolean",
+      "title": "Recall automatically",
+      "description": "Add relevant memories when a session starts and with each prompt. Each prompt makes one search request.",
+      "default": true
+    },
+    "auto_save": {
+      "type": "boolean",
+      "title": "Save automatically",
+      "description": "Before compaction and when a session ends, save the messages you typed in that session (not Claude's replies or tool output). Each save is billed per your plan.",
+      "default": true
+    },
+    "project": {
+      "type": "string",
+      "title": "Project",
+      "description": "Optional. A project name from the portal to save to and recall from. Leave empty to save to the key's home project and recall from every project linked to the key.",
+      "default": ""
+    }
+  },
+  "license": "MIT",
+  "icon": "./icon.png",
+  "documentationUrl": "https://github.com/membraince/membraince-code/blob/main/integrations/claude-code/README.md",
+  "supportUrl": "https://membraince.com/support",
+  "privacyPolicyUrl": "https://membraince.com/privacy",
+  "termsOfServiceUrl": "https://membraince.com/terms"
+}

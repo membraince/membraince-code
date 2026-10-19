@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "membraince": {
+      "type": "http",
+      "url": "${user_config.server_url}",
+      "headers": {
+        "X-API-Key": "${user_config.api_key}",
+        "X-MemBraince-User": "${user_config.user_id}",
+        "X-MemBraince-Auto-Recall": "${user_config.auto_recall}",
+        "X-MemBraince-Project": "${user_config.project}"
+      }
+    }
+  }
+}
