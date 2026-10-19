@@ -17,9 +17,10 @@ function Check([string]$Description, [scriptblock]$Condition) {
     if (& $Condition) { "  ok   $Description" } else { "  FAIL $Description"; $script:failures++ }
 }
 
-function Run([string]$Action, [string]$Key, [string]$Json, [switch]$Wait) {
+$hostName = "127.0.0.1"
+function Run([string]$Action, [string]$Key, [string]$Json) {
     $env:MEMBRAINCE_API_KEY = $Key
-    $env:MEMBRAINCE_URL = "http://127.0.0.1:$port"
+    $env:MEMBRAINCE_URL = "http://${hostName}:$port"
     $env:PLUGIN_DATA = $data
     $Json | powershell -NoProfile -ExecutionPolicy Bypass -File $script $Action | Out-Null
 }
@@ -32,6 +33,7 @@ function Save([string]$Session, [string]$Key = "key-a", [string]$Event = "PreCom
 function Start-Session([string]$Session, [string]$Key = "key-a") {
     Run "session-start" $Key ('{"hook_event_name":"SessionStart","session_id":"' + $Session + '","cwd":"C:\\w\\app"}')
 }
+function Received { if (Test-Path "$work\received.txt") { [IO.File]::ReadAllText("$work\received.txt") } else { "" } }
 function Uploaded { if (Test-Path "$work\uploaded.txt") { @(Get-Content "$work\uploaded.txt") } else { @() } }
 function Queued { @(Get-ChildItem -Path $data -Recurse -Filter "*.json" -File -ErrorAction SilentlyContinue).Count }
 
@@ -67,12 +69,49 @@ try {
     Check "a new session sends an earlier session's stranded queue" { ((Uploaded) -join "|") -eq "key-a stranded with key a" }
     Check "a queue made with another key is left alone" { (Queued) -eq 1 }
 
+    # A response lost after the server stored the save: the prompt stays queued,
+    # and the retry sends byte-identical lines with the same ids.
+    Remove-Item "$work\received.txt" -ErrorAction SilentlyContinue
+    Prompt "s9" "accepted then disconnected"
+    New-Item -ItemType File "$work\drop" | Out-Null
+    Save "s9"
+    Remove-Item "$work\drop"
+    Check "a save whose response is lost keeps its prompt" { (Queued) -eq 2 }
+    $first = Received
+    Remove-Item "$work\received.txt"
+    Save "s9"
+    Check "the retry resends the same lines, with the same id" { (Received) -eq $first -and $first -match '"id":' }
+    Check "after the retry succeeds, nothing of that session is queued" { (Queued) -eq 1 }
+
+    # A queue made for one server is never sent to another with the same key.
+    Remove-Item "$work\uploaded.txt" -ErrorAction SilentlyContinue
+    Prompt "s10" "meant for the first server"
+    $hostName = "localhost"; Start-Session "s11"; $hostName = "127.0.0.1"
+    Check "a queue isn't sent to a different server address" { -not ((Uploaded) -match "meant for the first server") }
+    Save "s10"
+
+    $acl = Get-Acl -LiteralPath $root
+    $me = [Security.Principal.WindowsIdentity]::GetCurrent().User
+    Check "the queue folder is limited to this account" {
+        $acl.AreAccessRulesProtected -and @($acl.Access | Where-Object { $_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]) -ne $me }).Count -eq 0
+    }
+
     $old = (Get-ChildItem -Path $data -Recurse -Directory -Filter "s4").FullName
     $past = (Get-Date).AddDays(-40)
     Get-ChildItem $old -File | ForEach-Object { $_.LastWriteTime = $past }
     (Get-Item $old).LastWriteTime = $past
     Start-Session "s6" "key-b"
     Check "a 30-day-old queue is deleted, not sent" { -not (Test-Path $old) -and -not ((Uploaded) -match "key b") }
+
+    # Recovery shares one deadline with recall: with a slow server and many
+    # stranded queues, session start still ends inside the hook's 20 seconds.
+    foreach ($i in 1..6) { Prompt "slow$i" "stranded $i" }
+    New-Item -ItemType File "$work\slow" | Out-Null
+    $took = (Measure-Command { Start-Session "s13" }).TotalSeconds
+    Remove-Item "$work\slow"
+    Check ("session start finishes within its time limit ({0:N0} s)" -f $took) { $took -lt 20 }
+    Start-Session "s14"
+    foreach ($i in 1..6) { Save "slow$i" }
 
     Remove-Item "$work\uploaded.txt" -ErrorAction SilentlyContinue
     $jobs = @()
@@ -96,7 +135,8 @@ try {
     $jobs | Wait-Job | Remove-Job
     if (Test-Path "$work\fail") { Remove-Item "$work\fail" }
     foreach ($i in 1..5) { Save "s8" }
-    $sent = @(Uploaded)
+    # Only this test's prompts count: the slow test's uploads can still land late.
+    $sent = @(Uploaded | Where-Object { $_ -match " stress " })
     Check "under load, every prompt is sent exactly once" { $sent.Count -eq 40 -and @($sent | Sort-Object -Unique).Count -eq 40 }
     Check "nothing is left queued" { (Queued) -eq 0 }
 } finally {

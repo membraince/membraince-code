@@ -24,4 +24,9 @@
 - OpenCode: the MCP entry passes `MEMBRAINCE_USER` and `MEMBRAINCE_PROJECT` too, matching the plugin.
 - `memory` skills: a correction saves the new memory before forgetting the old one.
 - Tests for the hook scripts (`tests/`), run in CI on Linux, macOS, and Windows.
+- Claude Code plugin 0.7.1 and Codex plugin 0.3.1: each queued line carries an explicit id, and a save
+  whose answer is lost resends the same lines. A save builds its upload in one file first, so a failed
+  read never deletes unsent prompts. On Windows the queue folder's permissions are limited to your
+  account. Session start shares one 15-second deadline between recall and recovery. The queue's
+  identity includes the server address, so a queue is never sent to a different server.
 

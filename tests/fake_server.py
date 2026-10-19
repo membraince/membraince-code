@@ -6,7 +6,11 @@ It listens on a free port, writes the port number to <folder>/port, and exits
 once <folder> is deleted, so a test run never leaves it behind.
 
 Every prompt a save uploads is appended to <folder>/uploaded.txt, one per line,
-with the API key that sent it. While <folder>/fail exists, saves answer 500.
+with the API key that sent it, and every uploaded line as received to
+<folder>/received.txt. While <folder>/fail exists, saves answer 500. While
+<folder>/drop exists, a save is recorded and the connection closed without an
+answer, like a response lost on the way back. While <folder>/slow exists, saves
+take 10 seconds.
 Recall routes answer with a fixed line so tests can see recall output.
 """
 
@@ -26,13 +30,18 @@ class Handler(BaseHTTPRequestHandler):
         if not self.path.endswith("/transcript"):
             self.reply(200, b"Memories from MemBraince: (test)")
             return
-        time.sleep(0.2)
+        time.sleep(10 if os.path.exists(os.path.join(folder, "slow")) else 0.2)
         if os.path.exists(os.path.join(folder, "fail")):
             self.reply(500, b"")
             return
         with open(os.path.join(folder, "uploaded.txt"), "a", encoding="utf-8", newline="\n") as log:
             for line in body.splitlines():
                 log.write(self.headers.get("X-API-Key", "") + " " + json.loads(line)["hook"]["prompt"] + "\n")
+        with open(os.path.join(folder, "received.txt"), "a", encoding="utf-8", newline="\n") as log:
+            log.write(body if body.endswith("\n") else body + "\n")
+        if os.path.exists(os.path.join(folder, "drop")):
+            self.close_connection = True
+            return
         self.reply(200, b'{"saved": 1}')
 
     def reply(self, status, payload):

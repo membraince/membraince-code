@@ -26,18 +26,34 @@ function Recall([string]$Route) {
     } catch {}
 }
 
-# Queues are kept per API key, so a leftover queue is only ever sent with the
-# key that queued it. The folder name holds a hash of the key, never the key.
+# Queues are kept per API key and server, so a leftover queue is only ever
+# sent with the key that queued it, to the server it was meant for. The folder
+# name holds a hash, never the key.
 $sha = [Security.Cryptography.SHA256]::Create()
-$fingerprint = (-join ($sha.ComputeHash($utf8.GetBytes($env:MEMBRAINCE_API_KEY)) | ForEach-Object { $_.ToString("x2") })).Substring(0, 16)
+$fingerprint = (-join ($sha.ComputeHash($utf8.GetBytes($env:MEMBRAINCE_API_KEY + "`n" + $base)) | ForEach-Object { $_.ToString("x2") })).Substring(0, 16)
 $data = if ($env:PLUGIN_DATA) { $env:PLUGIN_DATA } else { $env:TEMP }
 $root = Join-Path $data "membraince-queue-$fingerprint"
 
+# The queue folder is limited to this account: inherited permissions are
+# replaced by full control for the current user only.
+function Ensure-Root {
+    if (Test-Path -LiteralPath $root) { return }
+    [void](New-Item -ItemType Directory -Force -Path $root)
+    $acl = New-Object Security.AccessControl.DirectorySecurity
+    $acl.SetAccessRuleProtection($true, $false)
+    $me = [Security.Principal.WindowsIdentity]::GetCurrent().User
+    $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($me, "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")))
+    Set-Acl -LiteralPath $root -AclObject $acl
+}
+
 function Queue-Prompt([string]$Session) {
+    Ensure-Root
     $dir = Join-Path $root $Session
     [void](New-Item -ItemType Directory -Force -Path $dir)
     $name = [DateTime]::UtcNow.ToString("yyyyMMddHHmmssfffffff") + "-$PID-" + (Get-Random)
-    $line = '{"time":"' + [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") + '","hook":' + $hookInput + '}' + "`n"
+    # Each line carries its own id, so a save resent after a lost response sends
+    # the same ids and the server stores each prompt once.
+    $line = '{"id":"' + $name + '","time":"' + [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") + '","hook":' + $hookInput + '}' + "`n"
     # Written under a hidden name, then renamed: a save only ever sees whole files.
     $temp = Join-Path $dir ".$name.tmp"
     [IO.File]::WriteAllText($temp, $line, $utf8)
@@ -118,8 +134,11 @@ function Recover([string]$Session) {
             if (-not (Test-Path -LiteralPath "$($dir.FullName).saving")) { Remove-Item -LiteralPath $dir.FullName -Recurse -Force }
             continue
         }
-        if ($started.Elapsed.TotalSeconds -ge 12) { break }
-        [void](Flush $dir.FullName 4)
+        # One deadline for the whole hook: recall and recovery finish within 15
+        # seconds, well inside the hook's 20-second limit.
+        $left = [int][Math]::Floor(15 - $started.Elapsed.TotalSeconds)
+        if ($left -lt 2) { break }
+        [void](Flush $dir.FullName ([Math]::Min($left, 4)))
     }
     Get-ChildItem -LiteralPath $root -Filter "*.saved" -File | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-1) } | Remove-Item -Force
 }

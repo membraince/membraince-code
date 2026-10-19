@@ -43,10 +43,16 @@ the `X-API-Key` header. Nothing is sent to any other service.
 
 Automatic save keeps each prompt you type as its own small file until a save sends it:
 `membraince-queue-<hash>/<session>/` inside the plugin's data folder (or your temporary folder if Claude Code doesn't
-provide one). `<hash>` is derived from your API key, memory owner, and project (never the key
-itself), so a leftover queue is only ever sent where it was meant to go. The files are readable by
-your account only. A save deletes exactly the files it sent, once the server confirms; a failed
-save keeps them, and the next session sends anything an earlier session couldn't. A session's
+provide one). `<hash>` is derived from your API key, memory owner, project, and the server
+address (never the key itself), so a leftover queue is only ever sent with the key that queued it, to the server it was
+meant for. The folder is readable by your account only: on macOS and Linux through file
+permissions, on Windows by replacing the folder's inherited permissions with full control for your
+account alone. A save deletes exactly the files it sent, once the server confirms; a failed save
+keeps them, and the next session sends anything an earlier session couldn't.
+
+Each queued line carries an id. If a save reaches the server but its answer is lost, the files stay
+queued and the next save resends the same lines with the same ids; the server stores each prompt
+once, recognizing lines it already saved for the session. A session's
 queue left untouched for 30 days is deleted instead of kept forever.
 
 Automatic save sends every prompt you type, including anything sensitive you paste. The

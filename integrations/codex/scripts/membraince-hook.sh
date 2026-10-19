@@ -21,9 +21,10 @@ field() {
   printf '%s' "$input" | sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p"
 }
 session="$(field session_id | tr -cd 'A-Za-z0-9_-')"
-# Queues are kept per API key, so a leftover queue is only ever sent with the
-# key that queued it. The folder name holds a hash of the key, never the key.
-fingerprint="$(printf '%s' "$MEMBRAINCE_API_KEY" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-16)"
+# Queues are kept per API key and server, so a leftover queue is only ever
+# sent with the key that queued it, to the server it was meant for. The folder
+# name holds a hash, never the key.
+fingerprint="$(printf '%s\n%s' "$MEMBRAINCE_API_KEY" "$base" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-16)"
 root="${PLUGIN_DATA:-${TMPDIR:-/tmp}}/membraince-queue-${fingerprint}"
 
 post() { # post <route> <seconds> <content type>, body on stdin
@@ -38,14 +39,25 @@ recall() {
   [ "${MEMBRAINCE_AUTO_RECALL:-true}" = "false" ] || printf '%s' "$input" | post "$1" 8 application/json
 }
 
+ensure_root() {
+  [ -d "$root" ] && return 0
+  mkdir -p "$root" || return 1
+  # On Windows umask has no effect, so limit the folder to this account.
+  case "$(uname -s)" in
+    MINGW* | MSYS* | CYGWIN*) icacls "$(cygpath -w "$root")" /inheritance:r /grant:r "${USERNAME}:(OI)(CI)F" >/dev/null 2>&1 ;;
+  esac
+}
+
 queue_prompt() {
-  [ -n "$session" ] && mkdir -p "${root}/${session}" || return 0
+  [ -n "$session" ] && ensure_root && mkdir -p "${root}/${session}" || return 0
   local nanos name
   nanos="$(date +%N 2>/dev/null)"
   case "$nanos" in '' | *N*) nanos=000000000 ;; esac
   name="$(date -u +%Y%m%d%H%M%S)${nanos}-$$-${RANDOM}"
   # Written under a hidden name, then renamed: a save only ever sees whole files.
-  printf '{"time":"%s","hook":%s}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$input" >"${root}/${session}/.${name}.tmp" &&
+  # Each line carries its own id, so a save resent after a lost response sends
+  # the same ids and the server stores each prompt once.
+  printf '{"id":"%s","time":"%s","hook":%s}\n' "$name" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$input" >"${root}/${session}/.${name}.tmp" &&
     mv "${root}/${session}/.${name}.tmp" "${root}/${session}/${name}.json"
 }
 
@@ -81,15 +93,19 @@ release_lock() {
 }
 
 flush() { # flush <session folder> <seconds>; succeeds when nothing is left to send
-  local dir="$1" files sent=1
+  local dir="$1" files body sent=1
   take_lock "${dir}.saving" || return 1
   files=("$dir"/*.json)
+  body="${dir}.body.$$"
+  # The upload is read from one file built first, so a failed read never
+  # passes for a sent save and deletes prompts that weren't sent.
   if [ ! -e "${files[0]}" ]; then
     sent=0
-  elif cat "${files[@]}" | post transcript "$2" application/x-ndjson >/dev/null; then
+  elif cat "${files[@]}" >"$body" && post transcript "$2" application/x-ndjson <"$body" >/dev/null; then
     rm -f "${files[@]}"
     sent=0
   fi
+  rm -f "$body"
   release_lock "${dir}.saving"
   return "$sent"
 }
@@ -97,7 +113,7 @@ flush() { # flush <session folder> <seconds>; succeeds when nothing is left to s
 recover() {
   # Queues from earlier sessions whose last save failed. A session folder left
   # untouched for 30 days is deleted rather than kept forever.
-  local dir
+  local dir left
   for dir in "$root"/*/; do
     dir="${dir%/}"
     [ -d "$dir" ] || continue
@@ -107,8 +123,11 @@ recover() {
       [ -d "${dir}.saving" ] || rm -rf "$dir"
       continue
     fi
-    [ "$SECONDS" -lt 12 ] || break
-    flush "$dir" 4
+    # One deadline for the whole hook: recall and recovery finish within 15
+    # seconds, well inside the hook's 20-second limit.
+    left=$((15 - SECONDS))
+    [ "$left" -ge 2 ] || break
+    flush "$dir" "$((left < 4 ? left : 4))"
   done
   find "$root" -maxdepth 1 -name '*.saved' -mtime +1 -exec rm -f {} + 2>/dev/null
 }
