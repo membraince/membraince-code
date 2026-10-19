@@ -8,6 +8,13 @@ session="$(tr -d '\r\n' | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^
 [ -n "$session" ] || exit 0
 queue="${CLAUDE_PLUGIN_DATA:-${TMPDIR:-/tmp}}/membraince-queue-${session}.jsonl"
 sending="${queue}.sending"
+# One save per session at a time: a save holding the lock is uploading right
+# now, so this one steps aside and the next save sends anything left over. A
+# lock older than 2 minutes was left by a save that died (uploads stop at 20 s).
+lock="${queue}.lock"
+find "$lock" -maxdepth 0 -mmin +2 -exec rmdir {} \; 2>/dev/null
+mkdir "$lock" 2>/dev/null || exit 0
+trap 'rmdir "$lock" 2>/dev/null' EXIT
 # Prompts left over from a save that didn't finish go out with this one.
 if [ -f "$sending" ]; then
   cat "$queue" >>"$sending" 2>/dev/null

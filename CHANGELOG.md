@@ -11,4 +11,5 @@
 - Claude Code plugin 0.5.1 and Codex plugin 0.1.1: the hooks filter the session file on your machine, so only lines holding your own messages are sent.
 - Codex plugin 0.1.1: also saves after a turn (at most every 15 minutes per session), so saving no longer depends on the 3-second session-end hook; shorter listing tagline.
 - Claude Code plugin 0.6.0 and Codex plugin 0.2.0: automatic save no longer reads the session file. The prompt hook queues each prompt you type on your machine, and saves send that queue, clearing it (and, for Codex, starting the 15-minute timer) only after the save succeeds.
+- Claude Code plugin 0.6.1 and Codex plugin 0.2.1: one save per session at a time. Saves take a per-session lock around recovery, upload, and cleanup; a save that finds another in progress steps aside, and a lock left by a crashed save expires after 2 minutes.
 
