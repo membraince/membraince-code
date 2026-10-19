@@ -5,8 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh\"",
-            "timeout": 10,
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/membraince-hook.sh\" session-start",
+            "timeout": 20,
             "statusMessage": "Recalling memories"
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/queue-prompt.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/membraince-hook.sh\" queue",
             "timeout": 5
           },
           {
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/save-transcript.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/membraince-hook.sh\" save",
             "timeout": 30
           }
         ]
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/save-transcript.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/membraince-hook.sh\" save",
             "timeout": 30
           }
         ]

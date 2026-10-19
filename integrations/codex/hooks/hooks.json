@@ -7,7 +7,7 @@
             "type": "command",
             "command": "bash \"${PLUGIN_ROOT}/scripts/membraince-hook.sh\" session-start",
             "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${PLUGIN_ROOT}/scripts/membraince-hook.ps1\" session-start",
-            "timeout": 10,
+            "timeout": 20,
             "statusMessage": "Recalling memories"
           }
         ]

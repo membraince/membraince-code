@@ -13,4 +13,15 @@
 - Claude Code plugin 0.6.0 and Codex plugin 0.2.0: automatic save no longer reads the session file. The prompt hook queues each prompt you type on your machine, and saves send that queue, clearing it (and, for Codex, starting the 15-minute timer) only after the save succeeds.
 - Claude Code plugin 0.6.1 and Codex plugin 0.2.1: one save per session at a time. Saves take a per-session lock around recovery, upload, and cleanup; a save that finds another in progress steps aside, and a lock left by a crashed save expires after 2 minutes.
 - Claude Code plugin 0.6.2 and Codex plugin 0.2.2: no prompt can be lost between queueing and saving. A brief queue lock covers adding a prompt and a save taking the queue (never the upload), and a failed save keeps its prompts pending instead of copying them back over the queue.
+- Claude Code plugin 0.7.0 and Codex plugin 0.3.0: queued prompts are one file each, written atomically, so
+  no lock is needed to add one and a save deletes exactly what it sent. The save lock records its owner and
+  is cleared only when that process is gone. A new session sends prompts an earlier session's failed save
+  left, but only with the same key (and, for Claude Code, the same memory owner and project). Queue files
+  are readable by your account only, and a queue untouched for 30 days is deleted. Session end never waits
+  on a lock. The Claude Code hooks are now one script, `membraince-hook.sh`.
+- Codex plugin 0.3.0: the hooks no longer take `MEMBRAINCE_USER` or `MEMBRAINCE_PROJECT`, so automatic
+  recall and save always use the same memories as the memory tools.
+- OpenCode: the MCP entry passes `MEMBRAINCE_USER` and `MEMBRAINCE_PROJECT` too, matching the plugin.
+- `memory` skills: a correction saves the new memory before forgetting the old one.
+- Tests for the hook scripts (`tests/`), run in CI on Linux, macOS, and Windows.
 

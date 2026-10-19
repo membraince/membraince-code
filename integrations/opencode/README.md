@@ -23,7 +23,11 @@ Long-term memory for [OpenCode](https://opencode.ai), backed by [MemBraince](htt
        "membraince": {
          "type": "remote",
          "url": "https://membraince.com/v1/mcp",
-         "headers": { "X-API-Key": "{env:MEMBRAINCE_API_KEY}" },
+         "headers": {
+           "X-API-Key": "{env:MEMBRAINCE_API_KEY}",
+           "X-MemBraince-User": "{env:MEMBRAINCE_USER}",
+           "X-MemBraince-Project": "{env:MEMBRAINCE_PROJECT}"
+         },
          "oauth": false
        }
      }
@@ -40,6 +44,9 @@ the memory tools keep working either way.
 
 ### Settings
 
+The plugin and the MCP entry above read the same variables, so automatic recall and save use the
+same memories as the tools. An unset variable falls back to the default.
+
 | Variable | Meaning | Default |
 | --- | --- | --- |
 | `MEMBRAINCE_API_KEY` | Your API key | none; the plugin does nothing without it |
@@ -50,8 +57,9 @@ the memory tools keep working either way.
 
 ## What the plugin sends
 
-Everything goes to `https://membraince.com` with your API key in the `X-API-Key` header. Nothing is
-sent anywhere else.
+The plugin sends to `MEMBRAINCE_URL` (by default `https://membraince.com`) and the MCP entry to the
+URL in it, both with your API key in the `X-API-Key` header. Nothing is sent to any other service. Automatic save sends every message you
+type, including anything sensitive you paste; don't paste secrets, or turn automatic save off.
 
 | When | Request | Contents |
 | --- | --- | --- |
