@@ -27,9 +27,22 @@ post() {
 }
 if [ "$action" = "transcript" ]; then
   # transcript_path is a JSON string; Windows paths arrive with escaped backslashes.
-  path="$(printf '%s' "$input" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | sed 's#\\#/#g')"
+  path="$(printf '%s' "$input" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | sed 's#\\\\#/#g')"
   [ -n "$path" ] && [ -f "$path" ] || exit 0
-  { printf '%s\n' "$input"; tail -c 2000000 "$path"; } | post 3 application/x-ndjson >/dev/null
+  event="$(printf '%s' "$input" | sed -n 's/.*"hook_event_name"[[:space:]]*:[[:space:]]*"\([A-Za-z]*\)".*/\1/p')"
+  if [ "$event" = "Stop" ]; then
+    # Stop runs after every turn; save from it at most every 15 minutes per session.
+    session="$(printf '%s' "$input" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | tr -cd 'A-Za-z0-9_-')"
+    stamp="${PLUGIN_DATA:-${TMPDIR:-/tmp}}/membraince-saved-${session}"
+    [ -n "$(find "$stamp" -mmin -15 2>/dev/null)" ] && exit 0
+    mkdir -p "$(dirname "$stamp")" && touch "$stamp"
+  fi
+  # Codex gives SessionEnd hooks at most 3 seconds.
+  limit=20
+  [ "$event" = "SessionEnd" ] && limit=2
+  # Only the lines holding your own messages leave this machine: Codex's replies,
+  # tool calls, and tool output are filtered out here, before anything is sent.
+  { printf '%s\n' "$input"; tail -c 2000000 "$path" | grep -F '"role":"user"'; } | post "$limit" application/x-ndjson >/dev/null
 else
   printf '%s' "$input" | post 8 application/json
 fi

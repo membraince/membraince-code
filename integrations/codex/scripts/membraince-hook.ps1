@@ -15,15 +15,29 @@ $uri = "$base/v1/integrations/codex/$Action"
 $hookInput = [Console]::In.ReadToEnd() -replace "[\r\n]", ""
 try {
     if ($Action -eq "transcript") {
-        $path = ($hookInput | ConvertFrom-Json).transcript_path
+        $hook = $hookInput | ConvertFrom-Json
+        $path = $hook.transcript_path
         if (-not $path -or -not (Test-Path -LiteralPath $path)) { exit 0 }
+        if ($hook.hook_event_name -eq "Stop") {
+            # Stop runs after every turn; save from it at most every 15 minutes per session.
+            $folder = if ($env:PLUGIN_DATA) { $env:PLUGIN_DATA } else { $env:TEMP }
+            $stamp = Join-Path $folder ("membraince-saved-" + ($hook.session_id -replace "[^A-Za-z0-9_-]", ""))
+            if ((Test-Path -LiteralPath $stamp) -and (Get-Item -LiteralPath $stamp).LastWriteTime -gt (Get-Date).AddMinutes(-15)) { exit 0 }
+            [void](New-Item -ItemType Directory -Force -Path $folder)
+            Set-Content -LiteralPath $stamp -Value "" -Encoding ascii
+        }
+        # Codex gives SessionEnd hooks at most 3 seconds.
+        $limit = if ($hook.hook_event_name -eq "SessionEnd") { 2 } else { 20 }
         $stream = [IO.File]::Open($path, "Open", "Read", "ReadWrite")
         [void]$stream.Seek([Math]::Max(0, $stream.Length - 2000000), "Begin")
         $reader = New-Object IO.StreamReader($stream, [Text.Encoding]::UTF8)
         $tail = $reader.ReadToEnd()
         $reader.Close()
-        $body = [Text.Encoding]::UTF8.GetBytes($hookInput + "`n" + $tail)
-        [void](Invoke-WebRequest -Uri $uri -Method Post -Headers $headers -ContentType "application/x-ndjson" -Body $body -TimeoutSec 3 -UseBasicParsing)
+        # Only the lines holding your own messages leave this machine: Codex's replies,
+        # tool calls, and tool output are filtered out here, before anything is sent.
+        $mine = ($tail -split "`n") | Where-Object { $_.Contains('"role":"user"') }
+        $body = [Text.Encoding]::UTF8.GetBytes((@($hookInput) + $mine) -join "`n")
+        [void](Invoke-WebRequest -Uri $uri -Method Post -Headers $headers -ContentType "application/x-ndjson" -Body $body -TimeoutSec $limit -UseBasicParsing)
     } else {
         $body = [Text.Encoding]::UTF8.GetBytes($hookInput)
         $response = Invoke-WebRequest -Uri $uri -Method Post -Headers $headers -ContentType "application/json" -Body $body -TimeoutSec 8 -UseBasicParsing

@@ -33,7 +33,7 @@ API key in the `X-API-Key` header. Nothing is sent anywhere else.
 | --- | --- | --- |
 | A session starts | `POST /v1/integrations/claude-code/session-start` | The hook's session details, including the project folder path |
 | You send a prompt | `recall` on `/v1/mcp` | The prompt text, to search for related memories |
-| Before compaction, and when a session ends | `POST /v1/integrations/claude-code/transcript` | The last 2 MB of the session transcript; the server keeps only the messages you typed and ignores Claude's replies and tool output |
+| Before compaction, and when a session ends | `POST /v1/integrations/claude-code/transcript` | The lines of the transcript's last 2 MB that hold your own messages; the script filters out Claude's replies and tool results before sending |
 | Claude calls a tool | `recall`, `remember`, or `forget` on `/v1/mcp` | What Claude passes to the tool |
 
 Turn off "Recall automatically" or "Save automatically" to stop the first three. The scripts in

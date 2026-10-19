@@ -7,8 +7,9 @@ Long-term memory for [Codex](https://developers.openai.com/codex), backed by
   `memory` skill for reviewing and correcting what is remembered.
 - **Recall automatically**: when a session starts, memories related to the project folder are added
   as context, and each prompt adds memories related to it (or nothing when none match).
-- **Save automatically**: before compaction and when a session ends, the messages you typed since the
-  last save are sent as one save. Codex's replies and tool output are not saved.
+- **Save automatically**: after a turn (at most every 15 minutes per session), before compaction,
+  and when a session ends, the messages you typed since the last save are sent as one save. Codex's
+  replies and tool output never leave your machine.
 
 ## Setup
 
@@ -52,7 +53,7 @@ sent anywhere else.
 | --- | --- | --- |
 | A session starts | `POST /v1/integrations/codex/session-start` | The hook input: session id, project folder path, model |
 | You send a prompt | `POST /v1/integrations/codex/prompt` | The hook input, including the prompt text |
-| Before compaction, and when a session ends | `POST /v1/integrations/codex/transcript` | The hook input and the last 2 MB of the session file; the server keeps only the messages you typed |
+| After a turn (at most every 15 minutes), before compaction, and when a session ends | `POST /v1/integrations/codex/transcript` | The hook input and the lines of the session file's last 2 MB that hold your own messages; the script filters out everything else before sending |
 | Codex calls a tool | `recall`, `remember`, or `forget` on `/v1/mcp` | What Codex passes to the tool |
 
 The hook scripts in `scripts/` are short and readable: `membraince-hook.sh` (bash and curl) and
