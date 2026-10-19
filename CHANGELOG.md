@@ -32,4 +32,5 @@
 - Codex plugin 0.4.0: the MCP server connects by signing in to MemBraince (OAuth) instead of with an API
   key. ChatGPT and remote Codex plugins can't send custom API keys, so with 0.3.x the memory tools never
   connected there. The hooks still use `MEMBRAINCE_API_KEY`.
+- New MemBraince logo on every integration (Claude Code plugin 0.7.2, Codex plugin 0.4.1, Claude Desktop extension 0.3.3) and in the README.
 

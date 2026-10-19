@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/assets/logo.png" alt="MemBraince" width="160"></p>
+
 # MemBraince integrations
 
 **Memory with receipts, in the tools you already use.**

@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "membraince",
   "display_name": "MemBraince",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Long-term memory for Claude: recall what matters and remember durable facts, preferences, and decisions across conversations.",
   "long_description": "MemBraince stores your memories with the conversation each one came from, and corrections never erase history. Claude can recall relevant memories, remember new facts, and forget memories you ask it to. Requires a MemBraince API key from https://membraince.com/portal.",
   "author": {
