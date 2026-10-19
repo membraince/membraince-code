@@ -46,8 +46,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-with open(os.path.join(folder, "port"), "w", encoding="utf-8") as handle:
+# Written under a temporary name and renamed, so a test never reads half a number.
+with open(os.path.join(folder, "port.tmp"), "w", encoding="utf-8") as handle:
     handle.write(str(server.server_address[1]))
+os.replace(os.path.join(folder, "port.tmp"), os.path.join(folder, "port"))
 
 
 def stop_when_folder_is_gone():

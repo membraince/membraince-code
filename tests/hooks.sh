@@ -5,10 +5,15 @@ set -u
 repo="$(cd "$(dirname "$0")/.." && pwd)"
 work="$(mktemp -d)"
 py="$(command -v python3 || command -v python)"
-"$py" "$repo/tests/fake_server.py" "$work" 2>/dev/null &
+"$py" "$repo/tests/fake_server.py" "$work" 2>"$work/server.log" &
 server=$!
 trap 'kill "$server" 2>/dev/null; rm -rf "$work"' EXIT
-for _ in $(seq 1 100); do [ -s "$work/port" ] && break; sleep 0.1; done
+for _ in $(seq 1 300); do [ -s "$work/port" ] && break; sleep 0.1; done
+if [ ! -s "$work/port" ]; then
+  echo "the fake server didn't start:" >&2
+  cat "$work/server.log" >&2
+  exit 1
+fi
 port="$(cat "$work/port")"
 failures=0
 
