@@ -24,7 +24,9 @@ What you get in a connected agent:
 | [Claude Desktop](integrations/claude-desktop) | Available | Extension: memory tools |
 | claude.ai and the Claude apps | Available | Custom connector with OAuth sign-in ([setup](docs/mcp.md#claudeai-and-the-claude-apps)) |
 | Any MCP client | Available | Memory tools over Streamable HTTP ([setup](docs/mcp.md#any-mcp-client)) |
-| OpenAI Codex, Cursor, Gemini CLI, Qwen Code, GitHub Copilot, OpenCode, Windsurf, Cline, Kiro, Factory Droid | In progress | Native integrations with automatic recall and save |
+| [OpenAI Codex](integrations/codex) | Testing | Plugin: memory tools, automatic recall, automatic save, `memory` skill |
+| [OpenCode](integrations/opencode) | Testing | Plugin file and MCP server: memory tools, automatic recall, automatic save |
+| Cursor, Gemini CLI, Qwen Code, GitHub Copilot, OpenCode, Windsurf, Cline, Kiro, Factory Droid | In progress | Native integrations with automatic recall and save |
 | ChatGPT, Zed, Continue, Roo Code, Goose, Amp, Augment, JetBrains, Trae, Warp, Visual Studio | In progress | Memory tools plus instructions for when to use them |
 
 ## Get started
@@ -61,6 +63,7 @@ The memory engine itself runs on membraince.com and isn't part of this repositor
 | `docs/` | The MCP endpoint, authentication, projects, and OAuth |
 | `scripts/` | Build helpers, such as packaging the Desktop extension |
 | `.claude-plugin/marketplace.json` | Lets Claude Code install the plugin straight from this repository |
+| `.agents/plugins/marketplace.json` | Lets Codex install its plugin straight from this repository |
 
 ## Contributing
 
