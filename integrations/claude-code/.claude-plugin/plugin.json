@@ -1,8 +1,8 @@
 {
   "name": "membraince",
   "displayName": "MemBraince",
-  "version": "0.7.2",
-  "description": "Long-term memory for Claude Code: recalls what matters when a session starts and with each prompt, and saves what you tell Claude across sessions.",
+  "version": "0.8.0",
+  "description": "Long-term memory for Claude Code: recalls what matters when a session starts and with each prompt, saves what you tell Claude, and learns where code lives in each repository.",
   "author": {
     "name": "1001636998 ONTARIO INC."
   },
@@ -43,7 +43,13 @@
     "auto_save": {
       "type": "boolean",
       "title": "Save automatically",
-      "description": "Before compaction and when a session ends, save the messages you typed in that session (not Claude's replies or tool output). Each save is billed per your plan.",
+      "description": "Before compaction and when a session ends, save the messages you typed, plus Claude's file reads, edits and commands when Learn the repository is on. Each save is billed per your plan.",
+      "default": true
+    },
+    "learn_code": {
+      "type": "boolean",
+      "title": "Learn the repository",
+      "description": "Also save the files Claude reads and edits and the commands it runs, so later sessions start knowing where code is and how it's tested. Files named like secrets (.env, keys) are never sent.",
       "default": true
     },
     "project": {

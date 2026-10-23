@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
-# MemBraince hook for Claude Code. Usage: membraince-hook.sh session-start|queue|save
+# MemBraince hook for Claude Code.
+# Usage: membraince-hook.sh session-start|queue|tool|brief|save
 #
-# session-start prints the memories MemBraince returns for the project (Claude
-#   Code adds them to the session as context), then sends prompts that earlier
-#   sessions queued but couldn't save.
+# session-start prints the memories MemBraince returns for the project, and what
+#   earlier sessions in this folder learned about its code (Claude Code adds both
+#   to the session as context), then sends what earlier sessions queued but
+#   couldn't save.
 # queue keeps the prompt you typed as one file on this machine; nothing is sent.
-# save sends this session's queued prompts as one save and deletes the files it
-#   sent once the save succeeds; a failed save keeps them for later.
-# Only the prompts you type are queued and sent for saving. Requests go to the
-# plugin's Server URL setting (https://membraince.com by default) with your key.
-# Any failure prints nothing and never blocks Claude Code.
+# tool keeps a tool call Claude made (a file it read or edited, a command and its
+#   output) the same way, when "Learn the repository" is on. Files named like
+#   secrets (.env, keys, credentials) are never kept.
+# brief prints what earlier sessions learned about the code your prompt names.
+# save sends this session's queue as one save and deletes the files it sent once
+#   the save succeeds; a failed save keeps them for later.
+# Requests go to the plugin's Server URL setting (https://membraince.com by
+# default) with your key. Any failure prints nothing and never blocks Claude Code.
 key="${CLAUDE_PLUGIN_OPTION_API_KEY:-}"
 [ -n "$key" ] || exit 0
 umask 077 # queued prompts are readable by your account only
@@ -129,14 +134,30 @@ recover() {
   done
 }
 
+# A tool call is kept unless the file or command it names looks like a secret.
+secret_name='(^|[/\\[:space:]=])(\.env(\.[[:alnum:]_-]+)?|[^/\\[:space:]]+\.(pem|key|p12|pfx|jks|keystore)|id_(rsa|dsa|ecdsa|ed25519)[^/\\[:space:]]*|\.netrc|\.npmrc|\.pypirc|\.git-credentials|credentials(\.[[:alnum:]]+)?|secrets?(\.[[:alnum:]]+)?)($|[[:space:]"'"'"';|&)])'
+names_secret() {
+  printf '%s' "$input" |
+    sed -nE 's/.*"(file_path|notebook_path|command)"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\2/p' |
+    grep -Eq "$secret_name"
+}
+
 [ "${CLAUDE_PLUGIN_OPTION_AUTO_SAVE:-true}" = "false" ] && auto_save=false || auto_save=true
+[ "${CLAUDE_PLUGIN_OPTION_AUTO_RECALL:-true}" = "false" ] && auto_recall=false || auto_recall=true
+[ "${CLAUDE_PLUGIN_OPTION_LEARN_CODE:-true}" = "false" ] && learn_code=false || learn_code=true
 case "$action" in
   session-start)
-    [ "${CLAUDE_PLUGIN_OPTION_AUTO_RECALL:-true}" = "false" ] || printf '%s' "$input" | post session-start 8 application/json
+    [ "$auto_recall" = true ] && printf '%s' "$input" | post session-start 8 application/json
     [ "$auto_save" = true ] && recover
     ;;
   queue)
     [ "$auto_save" = true ] && queue_prompt
+    ;;
+  tool)
+    [ "$auto_save" = true ] && [ "$learn_code" = true ] && ! names_secret && queue_prompt
+    ;;
+  brief)
+    [ "$auto_recall" = true ] && [ "$learn_code" = true ] && printf '%s' "$input" | post brief 6 application/json
     ;;
   save)
     [ "$auto_save" = true ] && [ -n "$session" ] && [ -d "${root}/${session}" ] && flush "${root}/${session}" 20

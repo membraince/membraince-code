@@ -33,4 +33,9 @@
   key. ChatGPT and remote Codex plugins can't send custom API keys, so with 0.3.x the memory tools never
   connected there. The hooks still use `MEMBRAINCE_API_KEY`.
 - New MemBraince logo on every integration (Claude Code plugin 0.7.2, Codex plugin 0.4.1, Claude Desktop extension 0.3.3) and in the README.
+- Claude Code plugin 0.8.0: Learn the repository (on by default). `PostToolUse` and `PostToolUseFailure`
+  hooks queue the files Claude reads and edits and the commands it runs, with their results, next to your
+  prompts; files named like secrets (`.env`, keys, credentials) are never queued. MemBraince keeps where code
+  is defined, what changed and which tests passed, and a session started in the same folder, or a prompt
+  naming that code, gets a short brief. Turn the setting off to send only your prompts.
 

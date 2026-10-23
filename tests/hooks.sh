@@ -167,6 +167,37 @@ for agent in codex claude-code; do
   check "nothing is left queued" '[ "$(queued)" = 0 ]'
 done
 
+echo "== claude-code: learning the repository"
+use_agent claude-code
+tool() { # tool <session> <event> <tool name> <tool_input JSON>
+  run tool key-a "{\"hook_event_name\":\"$2\",\"session_id\":\"$1\",\"cwd\":\"/w/app\",\"tool_name\":\"$3\",\"tool_input\":$4,\"tool_response\":{\"stdout\":\"4 passed\",\"stderr\":\"\"}}"
+}
+prompt t1 "add a refund method" >/dev/null
+tool t1 PostToolUse Read '{"file_path":"/w/app/src/ledger.py"}'
+tool t1 PostToolUse Edit '{"file_path":"/w/app/src/ledger.py","old_string":"a","new_string":"b"}'
+tool t1 PostToolUseFailure Bash '{"command":"python -m pytest -q tests/test_ledger.py"}'
+tool t1 PostToolUse Read '{"file_path":"/w/app/.env"}'
+tool t1 PostToolUse Read '{"file_path":"/w/app/certs/server.pem"}'
+tool t1 PostToolUse Bash '{"command":"cat .env.local | grep KEY"}'
+tool t1 PostToolUse Read '{"file_path":"C:\\Users\\dana\\.ssh\\id_ed25519"}'
+check "tool calls are queued, but none naming a secret file" '[ "$(queued)" = 4 ]'
+save t1
+check "a save sends the prompt and the tool calls" 'uploaded | grep -q "add a refund method" && [ "$(uploaded | grep -c " tool ")" = 3 ]'
+check "nothing naming a secret file is sent" '! grep -q "\.env\|server\.pem\|id_ed25519" "$work/received.txt"'
+CLAUDE_PLUGIN_OPTION_LEARN_CODE=false tool t2 PostToolUse Read '{"file_path":"/w/app/src/ledger.py"}'
+check "with Learn the repository off, tool calls are not kept" '[ "$(queued)" = 0 ]'
+CLAUDE_PLUGIN_OPTION_AUTO_SAVE=false tool t2 PostToolUse Read '{"file_path":"/w/app/src/ledger.py"}'
+check "with automatic save off, tool calls are not kept" '[ "$(queued)" = 0 ]'
+
+asked='{"hook_event_name":"UserPromptSubmit","session_id":"t3","cwd":"/w/app","prompt":"why does ledger.py round"}'
+: >"$work/routes.txt"
+brief="$(run brief key-a "$asked")"
+check "a prompt asks for the brief and prints it" 'grep -q "/v1/integrations/claude-code/brief" "$work/routes.txt" && [ "$brief" = "Memories from MemBraince: (test)" ]'
+: >"$work/routes.txt"
+CLAUDE_PLUGIN_OPTION_LEARN_CODE=false run brief key-a "$asked" >/dev/null
+CLAUDE_PLUGIN_OPTION_AUTO_RECALL=false run brief key-a "$asked" >/dev/null
+check "with Learn the repository or recall off, no brief is asked for" '[ ! -s "$work/routes.txt" ]'
+
 echo
 [ "$failures" = 0 ] && echo "all hook tests passed" || echo "$failures hook test(s) failed"
 exit "$failures"

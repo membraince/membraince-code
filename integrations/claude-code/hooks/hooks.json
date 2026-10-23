@@ -21,6 +21,11 @@
             "timeout": 5
           },
           {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/membraince-hook.sh\" brief",
+            "timeout": 8
+          },
+          {
             "type": "mcp_tool",
             "server": "plugin:membraince:membraince",
             "tool": "recall",
@@ -30,6 +35,30 @@
               "quiet": true
             },
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read|Edit|MultiEdit|Write|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/membraince-hook.sh\" tool",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Read|Edit|MultiEdit|Write|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/membraince-hook.sh\" tool",
+            "timeout": 5
           }
         ]
       }
