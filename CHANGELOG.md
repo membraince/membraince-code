@@ -38,4 +38,6 @@
   prompts; files named like secrets (`.env`, keys, credentials) are never queued. MemBraince keeps where code
   is defined, what changed and which tests passed, and a session started in the same folder, or a prompt
   naming that code, gets a short brief. Turn the setting off to send only your prompts.
+- Claude Code plugin 0.8.1: the "Learn the repository" setting says that, with "Recall automatically" on,
+  each prompt also asks for a brief on the code it names (a second request besides recall's search).
 

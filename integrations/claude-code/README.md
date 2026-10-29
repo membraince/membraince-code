@@ -37,7 +37,7 @@ the `X-API-Key` header. Nothing is sent to any other service.
 | --- | --- | --- |
 | A session starts | `POST /v1/integrations/claude-code/session-start` | The hook's session details, including the project folder path |
 | You send a prompt | `recall` on `/v1/mcp` | The prompt text, to search for related memories |
-| You send a prompt, with Learn the repository on | `POST /v1/integrations/claude-code/brief` | The prompt and the project folder path, to find what earlier sessions learned about the code it names |
+| You send a prompt, with Recall automatically and Learn the repository on | `POST /v1/integrations/claude-code/brief` | The prompt and the project folder path, to find what earlier sessions learned about the code it names |
 | A session starts, if an earlier session's save failed | `POST /v1/integrations/claude-code/transcript` | That session's queued prompts and tool calls |
 | You send a prompt | nothing | The prompt is added to the queue on your machine |
 | Claude reads or edits a file, or runs a command, with Learn the repository on | nothing | The tool call and its result (the file's contents, the edit, the command's output) are added to the queue on your machine |
