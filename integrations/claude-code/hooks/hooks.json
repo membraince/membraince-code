@@ -22,18 +22,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/membraince-hook.sh\" brief",
-            "timeout": 8
-          },
-          {
-            "type": "mcp_tool",
-            "server": "plugin:membraince:membraince",
-            "tool": "recall",
-            "input": {
-              "query": "${prompt}",
-              "limit": 5,
-              "quiet": true
-            },
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/membraince-hook.sh\" prompt",
             "timeout": 10
           }
         ]

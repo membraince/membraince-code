@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # MemBraince hook for Claude Code.
-# Usage: membraince-hook.sh session-start|queue|tool|brief|save
+# Usage: membraince-hook.sh session-start|queue|tool|prompt|save
 #
 # session-start prints the memories MemBraince returns for the project, and what
 #   earlier sessions in this folder learned about its code (Claude Code adds both
@@ -10,7 +10,9 @@
 # tool keeps a tool call Claude made (a file it read or edited, a command and its
 #   output) the same way, when "Learn the repository" is on. Files named like
 #   secrets (.env, keys, credentials) are never kept.
-# brief prints what earlier sessions learned about the code your prompt names.
+# prompt prints what MemBraince adds for the prompt you typed: in a folder earlier
+#   sessions learned, notes on the code it names (the session started with the
+#   project's rules and code map); anywhere else, memories related to it.
 # save sends this session's queue as one save and deletes the files it sent once
 #   the save succeeds; a failed save keeps them for later.
 # Requests go to the plugin's Server URL setting (https://membraince.com by
@@ -156,8 +158,8 @@ case "$action" in
   tool)
     [ "$auto_save" = true ] && [ "$learn_code" = true ] && ! names_secret && queue_prompt
     ;;
-  brief)
-    [ "$auto_recall" = true ] && [ "$learn_code" = true ] && printf '%s' "$input" | post brief 6 application/json
+  prompt)
+    [ "$auto_recall" = true ] && printf '%s' "$input" | post prompt 8 application/json
     ;;
   save)
     [ "$auto_save" = true ] && [ -n "$session" ] && [ -d "${root}/${session}" ] && flush "${root}/${session}" 20

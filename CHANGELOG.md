@@ -40,4 +40,8 @@
   naming that code, gets a short brief. Turn the setting off to send only your prompts.
 - Claude Code plugin 0.8.1: the "Learn the repository" setting says that, with "Recall automatically" on,
   each prompt also asks for a brief on the code it names (a second request besides recall's search).
+- Claude Code plugin 0.9.0: one request per prompt instead of two. In a folder MemBraince has learned, a
+  prompt gets notes on the code it names instead of a memory search (the session already starts with the
+  project's rules and code map); elsewhere it still gets related memories. Needs MemBraince Premium 0.6.19
+  or later.
 

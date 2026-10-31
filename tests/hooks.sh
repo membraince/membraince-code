@@ -191,12 +191,14 @@ check "with automatic save off, tool calls are not kept" '[ "$(queued)" = 0 ]'
 
 asked='{"hook_event_name":"UserPromptSubmit","session_id":"t3","cwd":"/w/app","prompt":"why does ledger.py round"}'
 : >"$work/routes.txt"
-brief="$(run brief key-a "$asked")"
-check "a prompt asks for the brief and prints it" 'grep -q "/v1/integrations/claude-code/brief" "$work/routes.txt" && [ "$brief" = "Memories from MemBraince: (test)" ]'
+added="$(run prompt key-a "$asked")"
+check "a prompt makes one request and prints what it adds" '[ "$(cat "$work/routes.txt")" = "/v1/integrations/claude-code/prompt" ] && [ "$added" = "Memories from MemBraince: (test)" ]'
 : >"$work/routes.txt"
-CLAUDE_PLUGIN_OPTION_LEARN_CODE=false run brief key-a "$asked" >/dev/null
-CLAUDE_PLUGIN_OPTION_AUTO_RECALL=false run brief key-a "$asked" >/dev/null
-check "with Learn the repository or recall off, no brief is asked for" '[ ! -s "$work/routes.txt" ]'
+CLAUDE_PLUGIN_OPTION_LEARN_CODE=false run prompt key-a "$asked" >/dev/null
+check "with Learn the repository off, a prompt still recalls" 'grep -q "/v1/integrations/claude-code/prompt" "$work/routes.txt"'
+: >"$work/routes.txt"
+CLAUDE_PLUGIN_OPTION_AUTO_RECALL=false run prompt key-a "$asked" >/dev/null
+check "with recall off, a prompt asks for nothing" '[ ! -s "$work/routes.txt" ]'
 
 echo
 [ "$failures" = 0 ] && echo "all hook tests passed" || echo "$failures hook test(s) failed"

@@ -1,7 +1,7 @@
 {
   "name": "membraince",
   "displayName": "MemBraince",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "Long-term memory for Claude Code: recalls what matters when a session starts and with each prompt, saves what you tell Claude, and learns where code lives in each repository.",
   "author": {
     "name": "1001636998 ONTARIO INC."
@@ -37,7 +37,7 @@
     "auto_recall": {
       "type": "boolean",
       "title": "Recall automatically",
-      "description": "Add relevant memories when a session starts and with each prompt. Each prompt makes one search request.",
+      "description": "Add relevant memories when a session starts and with each prompt. Each prompt makes one request.",
       "default": true
     },
     "auto_save": {
@@ -49,7 +49,7 @@
     "learn_code": {
       "type": "boolean",
       "title": "Learn the repository",
-      "description": "Also save the files Claude reads and edits and the commands it runs, so later sessions start knowing where code is and how it's tested. Files named like secrets (.env, keys) are never sent. With Recall automatically on, each prompt also asks for a brief on the code it names.",
+      "description": "Also save the files Claude reads and edits and the commands it runs, so later sessions start knowing where code is and how it's tested. Files named like secrets (.env, keys) are never sent. In a folder MemBraince has learned, a prompt gets notes on the code it names instead of a memory search.",
       "default": true
     },
     "project": {

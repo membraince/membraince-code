@@ -3,7 +3,8 @@
 Long-term memory for Claude Code, backed by [MemBraince](https://membraince.com).
 
 - **Recall automatically**: when a session starts, the memories most relevant to the project are
-  added as context, and each prompt adds memories relevant to it (or nothing when none match).
+  added as context. Each prompt then adds what's relevant to it: in a folder MemBraince has learned,
+  notes on the code it names; elsewhere, related memories (or nothing when none match).
 - **Save automatically**: each prompt you type is kept in a queue on your machine; before
   compaction and when a session ends, the queue is sent as one save.
 - **Learn the repository**: the files Claude reads and edits and the commands it runs are queued
@@ -36,8 +37,7 @@ the `X-API-Key` header. Nothing is sent to any other service.
 | When | Request | Contents |
 | --- | --- | --- |
 | A session starts | `POST /v1/integrations/claude-code/session-start` | The hook's session details, including the project folder path |
-| You send a prompt | `recall` on `/v1/mcp` | The prompt text, to search for related memories |
-| You send a prompt, with Recall automatically and Learn the repository on | `POST /v1/integrations/claude-code/brief` | The prompt and the project folder path, to find what earlier sessions learned about the code it names |
+| You send a prompt, with Recall automatically on | `POST /v1/integrations/claude-code/prompt` | The prompt and the project folder path. In a folder earlier sessions learned, MemBraince answers with notes on the code the prompt names; elsewhere, with memories related to it |
 | A session starts, if an earlier session's save failed | `POST /v1/integrations/claude-code/transcript` | That session's queued prompts and tool calls |
 | You send a prompt | nothing | The prompt is added to the queue on your machine |
 | Claude reads or edits a file, or runs a command, with Learn the repository on | nothing | The tool call and its result (the file's contents, the edit, the command's output) are added to the queue on your machine |
