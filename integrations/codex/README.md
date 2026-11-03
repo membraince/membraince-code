@@ -19,7 +19,7 @@ Create an account at https://membraince.com/portal and subscribe, then paste thi
 installs MemBraince and walks you through the rest:
 
 ```text
-Set up MemBraince memory for Codex on this computer. Run `codex plugin marketplace add membraince/membraince-code` and then `codex plugin add membraince@membraince` (if the `codex` command isn't found, tell me to install MemBraince from `/plugins` instead). Once I've started a new session and connected MemBraince, use its `setup` skill.
+Set up MemBraince memory for Codex on this computer. Run `codex plugin marketplace add membraince/membraince-code`, `codex plugin marketplace upgrade membraince` and `codex plugin add membraince@membraince` (if the `codex` command isn't found, tell me to install MemBraince from `/plugins` instead). Once I've started a new session and connected MemBraince, use its `setup` skill.
 ```
 
 Codex can't sign in or trust hooks for you, so it asks you to; your API key never goes into the chat.
