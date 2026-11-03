@@ -213,7 +213,9 @@ for agent in codex claude-code; do
   check "the same refusal again the same day prints nothing" '[ -z "$(start r3)" ]'
   echo 401 >"$work/status"
   check "a different refusal is told" 'is_notice "$(start r4)" "MemBraince didn"'
-  check "a refused prompt prints nothing" '[ -z "$(MEMBRAINCE_AUTO_SAVE=false run prompt key-a "{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"r9\",\"prompt\":\"why\"}")" ]'
+  # Run outside the check: bash 3.2 (macOS) splits escaped quotes nested in "$(...)" under eval.
+  refused="$(MEMBRAINCE_AUTO_SAVE=false run prompt key-a '{"hook_event_name":"UserPromptSubmit","session_id":"r9","prompt":"why"}')"
+  check "a refused prompt prints nothing" '[ -z "$refused" ]'
   echo 500 >"$work/status"
   check "a server error stays silent" '[ -z "$(start r5)" ]'
   echo 429 >"$work/status"
