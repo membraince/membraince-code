@@ -55,3 +55,9 @@
 - Setup pages say to subscribe first, put the connector first for Claude Desktop, give Codex's steps in order
   with the commands for each OS, and end with a "Check it works" step. docs/mcp.md leads with signing in in
   the browser. The Desktop extension links straight to its file.
+- Codex plugin 0.4.3: a `setup` skill. Say "set up MemBraince" and Codex checks the connection and the
+  subscription, saves the hooks' API key from your clipboard (it never goes into the chat), checks the key
+  with MemBraince, and tells you what's left: signing in and trusting the hooks. The Codex page starts with a
+  prompt to paste into Codex that installs the plugin (`codex plugin add membraince@membraince`) and hands
+  over to the skill. When the hooks find no key, session start says once a day to ask Codex to set up
+  MemBraince, instead of staying silent.

@@ -17,7 +17,17 @@
 # line, at most once a day; the model never sees it.
 key="${MEMBRAINCE_API_KEY:-}"
 [ -n "$key" ] || key="$(tr -d '[:space:]' <"${HOME}/.config/membraince/api-key" 2>/dev/null)"
-[ -n "$key" ] || exit 0
+if [ -z "$key" ]; then
+  # No key yet: once a day, session start says how to turn automatic memory on.
+  if [ "${1:-}" = session-start ] && { [ "${MEMBRAINCE_AUTO_RECALL:-true}" != false ] || [ "${MEMBRAINCE_AUTO_SAVE:-true}" != false ]; }; then
+    mark="${PLUGIN_DATA:-${TMPDIR:-/tmp}}/membraince-notice-no-key"
+    if [ -z "$(find "$mark" -mmin -1440 2>/dev/null)" ]; then
+      mkdir -p "${mark%/*}" 2>/dev/null && : >"$mark" 2>/dev/null
+      printf '%s\n' '{"systemMessage":"MemBraince: automatic recall and save are off on this computer. Ask Codex to \"set up MemBraince\"."}'
+    fi
+  fi
+  exit 0
+fi
 umask 077 # queued prompts are readable by your account only
 action="${1:-}"
 base="${MEMBRAINCE_URL:-https://membraince.com}"

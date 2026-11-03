@@ -202,6 +202,29 @@ try {
     } finally {
         $env:USERPROFILE = $realProfile
     }
+    "== codex (PowerShell): no key yet"
+    $emptyHome = Join-Path $work "nokey-home"
+    [void](New-Item -ItemType Directory -Force $emptyHome)
+    $noKeyData = Join-Path $work "nokey-data"
+    $realProfile = $env:USERPROFILE
+    $env:USERPROFILE = $emptyHome
+    try {
+        function No-Key([string]$Action, [string]$Event) {
+            $env:MEMBRAINCE_API_KEY = ""
+            $env:MEMBRAINCE_URL = "http://127.0.0.1:$port"
+            $env:PLUGIN_DATA = $noKeyData
+            ('{"hook_event_name":"' + $Event + '","session_id":"n1","prompt":"hi"}' | powershell -NoProfile -ExecutionPolicy Bypass -File $script $Action | Out-String).Trim()
+        }
+        Check "with no key, session start says how to set up MemBraince" { Is-Notice (No-Key "session-start" "SessionStart") "MemBraince: automatic recall and save are off on this computer." }
+        Check "the same day, it says it once" { -not (No-Key "session-start" "SessionStart") }
+        Check "with no key, a prompt prints and queues nothing" { -not (No-Key "prompt" "UserPromptSubmit") -and @(Get-ChildItem -Path $noKeyData -Recurse -Filter "*.json" -File -ErrorAction SilentlyContinue).Count -eq 0 }
+        Remove-Item -Recurse -Force $noKeyData
+        $env:MEMBRAINCE_AUTO_RECALL = "false"; $env:MEMBRAINCE_AUTO_SAVE = "false"
+        Check "with recall and save off, no key says nothing" { -not (No-Key "session-start" "SessionStart") }
+        Remove-Item Env:\MEMBRAINCE_AUTO_RECALL; Remove-Item Env:\MEMBRAINCE_AUTO_SAVE
+    } finally {
+        $env:USERPROFILE = $realProfile
+    }
 } finally {
     Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue
     Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue

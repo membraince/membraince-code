@@ -4,7 +4,8 @@ Long-term memory for [Codex](https://developers.openai.com/codex), backed by
 [MemBraince](https://membraince.com).
 
 - **Memory tools**: `recall`, `remember`, and `forget` on the `membraince` MCP server, plus a
-  `memory` skill for reviewing and correcting what is remembered.
+  `memory` skill for reviewing and correcting what is remembered, and a `setup` skill that walks you
+  through setting up MemBraince on your computer.
 - **Recall automatically**: when a session starts, memories related to the project folder are added
   as context, and each prompt adds memories related to it (or nothing when none match).
 - **Save automatically**: each prompt you type is queued on your machine. After a turn (at most
@@ -14,6 +15,16 @@ Long-term memory for [Codex](https://developers.openai.com/codex), backed by
 
 ## Setup
 
+Create an account at https://membraince.com/portal and subscribe, then paste this into Codex. It
+installs MemBraince and walks you through the rest:
+
+```text
+Set up MemBraince memory for Codex on this computer. Run `codex plugin marketplace add membraince/membraince-code` and then `codex plugin add membraince@membraince` (if the `codex` command isn't found, tell me to install MemBraince from `/plugins` instead). Once I've started a new session and connected MemBraince, use its `setup` skill.
+```
+
+Codex can't sign in or trust hooks for you, so it asks you to; your API key never goes into the chat.
+Codex saves it from your clipboard. Or follow the steps yourself:
+
 1. Create an account at https://membraince.com/portal and subscribe.
 2. Add this repository as a plugin marketplace:
 
@@ -21,8 +32,9 @@ Long-term memory for [Codex](https://developers.openai.com/codex), backed by
    codex plugin marketplace add membraince/membraince-code
    ```
 
-3. Open the plugin directory (`/plugins` in the CLI, or **Plugins** in the app), choose the
-   MemBraince marketplace, and install **MemBraince**.
+3. Install the plugin with `codex plugin add membraince@membraince`, or open the plugin directory
+   (`/plugins` in the CLI, or **Plugins** in the app), choose the MemBraince marketplace, and install
+   **MemBraince**.
 4. When Codex asks you to connect MemBraince, sign in and choose the project this connection saves to.
    The first time, you get a recovery code: keep it in a password manager, because step 5 needs it. If
    you've already created API keys, enter one (or your recovery code) to unlock your memories. The
@@ -61,6 +73,7 @@ run in ChatGPT or other cloud sessions; there, Codex uses the memory tools when 
 
 Tell Codex "Remember that I prefer short commit messages." In a new session, ask "How do I like my commit
 messages?" If the hooks can't use your key, the session start shows one MemBraince warning saying why.
+With no key at all, it suggests asking Codex to "set up MemBraince".
 
 ### Settings
 

@@ -248,6 +248,14 @@ check "with no MEMBRAINCE_API_KEY, saves use the key file" '[ "$(uploaded)" = "k
 from_file prompt key-a UserPromptSubmit "sent with the variable" >/dev/null
 from_file transcript key-a PreCompact >/dev/null
 check "MEMBRAINCE_API_KEY wins over the key file" '[ "$(uploaded)" = "key-a sent with the variable" ]'
+echo "== codex: no key yet"
+use_agent codex
+nokey() { HOME="$work/nokey-home" run "$1" "" "{\"hook_event_name\":\"$2\",\"session_id\":\"n1\",\"cwd\":\"/w/app\",\"prompt\":\"hi\"}"; }
+check "with no key, session start says how to set up MemBraince" 'is_notice "$(nokey session-start SessionStart)" "MemBraince: automatic recall and save are off on this computer."'
+check "the same day, it says it once" '[ -z "$(nokey session-start SessionStart)" ]'
+check "with no key, a prompt prints and queues nothing" '[ -z "$(nokey prompt UserPromptSubmit)" ] && [ "$(queued)" = 0 ]'
+rm -rf "$data"
+check "with recall and save off, no key says nothing" '[ -z "$(MEMBRAINCE_AUTO_RECALL=false MEMBRAINCE_AUTO_SAVE=false nokey session-start SessionStart)" ]'
 echo
 [ "$failures" = 0 ] && echo "all hook tests passed" || echo "$failures hook test(s) failed"
 exit "$failures"

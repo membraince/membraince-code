@@ -9,7 +9,21 @@ if (-not $key) {
     $keyFile = Join-Path $HOME ".config\membraince\api-key"
     if (Test-Path -LiteralPath $keyFile) { $key = ([IO.File]::ReadAllText($keyFile)).Trim() }
 }
-if (-not $key) { exit 0 }
+if (-not $key) {
+    # No key yet: once a day, session start says how to turn automatic memory on.
+    if ($Action -eq "session-start" -and ($env:MEMBRAINCE_AUTO_RECALL -ne "false" -or $env:MEMBRAINCE_AUTO_SAVE -ne "false")) {
+        $folder = if ($env:PLUGIN_DATA) { $env:PLUGIN_DATA } else { $env:TEMP }
+        $mark = Join-Path $folder "membraince-notice-no-key"
+        if (-not ((Test-Path -LiteralPath $mark) -and (Get-Item -LiteralPath $mark).LastWriteTime -gt (Get-Date).AddDays(-1))) {
+            try {
+                [void](New-Item -ItemType Directory -Force -Path $folder)
+                Set-Content -LiteralPath $mark -Value "" -Encoding ascii
+            } catch {}
+            [Console]::Out.Write('{"systemMessage":"MemBraince: automatic recall and save are off on this computer. Ask Codex to \"set up MemBraince\"."}' + "`n")
+        }
+    }
+    exit 0
+}
 if ($Action -notin @("session-start", "prompt", "transcript")) { exit 0 }
 $started = [Diagnostics.Stopwatch]::StartNew()
 $base = if ($env:MEMBRAINCE_URL) { $env:MEMBRAINCE_URL } else { "https://membraince.com" }
