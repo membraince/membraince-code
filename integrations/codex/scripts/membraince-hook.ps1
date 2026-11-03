@@ -2,11 +2,18 @@
 # Usage: membraince-hook.ps1 session-start|prompt|transcript
 param([string]$Action = "")
 $ErrorActionPreference = "Stop"
-if (-not $env:MEMBRAINCE_API_KEY) { exit 0 }
+# The key: MEMBRAINCE_API_KEY, or else the file ~/.config/membraince/api-key, which the
+# Codex app can read even when it doesn't see your variables.
+$key = $env:MEMBRAINCE_API_KEY
+if (-not $key) {
+    $keyFile = Join-Path $HOME ".config\membraince\api-key"
+    if (Test-Path -LiteralPath $keyFile) { $key = ([IO.File]::ReadAllText($keyFile)).Trim() }
+}
+if (-not $key) { exit 0 }
 if ($Action -notin @("session-start", "prompt", "transcript")) { exit 0 }
 $started = [Diagnostics.Stopwatch]::StartNew()
 $base = if ($env:MEMBRAINCE_URL) { $env:MEMBRAINCE_URL } else { "https://membraince.com" }
-$headers = @{ "X-API-Key" = $env:MEMBRAINCE_API_KEY }
+$headers = @{ "X-API-Key" = $key }
 $autoRecall = $env:MEMBRAINCE_AUTO_RECALL -ne "false"
 $autoSave = $env:MEMBRAINCE_AUTO_SAVE -ne "false"
 [Console]::InputEncoding = [Text.Encoding]::UTF8
@@ -18,19 +25,51 @@ function Send([string]$Route, [string]$ContentType, [byte[]]$Body, [int]$Seconds
     Invoke-WebRequest -Uri "$base/v1/integrations/codex/$Route" -Method Post -Headers $headers -ContentType $ContentType -Body $Body -TimeoutSec $Seconds -UseBasicParsing
 }
 
+# The status MemBraince answered a failed request with, for the notice below.
+$refused = 0
+function Note-Refusal($Failure) {
+    $response = $Failure.Exception.Response
+    if ($response) { $script:refused = [int]$response.StatusCode }
+}
+
+# Prints what MemBraince adds and returns it; returns "" when nothing was recalled.
 function Recall([string]$Route) {
-    if (-not $autoRecall) { return }
+    if (-not $autoRecall) { return "" }
     try {
         $response = Send $Route "application/json" $utf8.GetBytes($hookInput) 8
         if ($response.Content) { [Console]::Out.Write($response.Content) }
+        return "$($response.Content)"
+    } catch {
+        Note-Refusal $_
+        return ""
+    }
+}
+
+# MemBraince's refusal in one line for you, as a warning Codex shows and the
+# model never sees. The same problem is told at most once a day.
+function Show-Notice {
+    $messages = @{
+        401 = "MemBraince didn't accept your API key (MEMBRAINCE_API_KEY or ~/.config/membraince/api-key), so memory is off. Check it, or create a new key at https://membraince.com/portal."
+        402 = "MemBraince memory is off until you subscribe at https://membraince.com/portal. What you type stays queued on this computer for up to 30 days and is saved once you do."
+        403 = "MemBraince refused this key's project. Check the key's projects at https://membraince.com/portal."
+        423 = "This API key can't unlock your encrypted MemBraince memories. Create a new key at https://membraince.com/portal and use it in place of this one."
+        429 = "This API key has reached a MemBraince limit, so memory is paused. Usage is on https://membraince.com/portal; what you type stays queued and is saved later."
+    }
+    if (-not $messages.ContainsKey($script:refused)) { return }
+    $mark = Join-Path $root "notice-$($script:refused)"
+    if ((Test-Path -LiteralPath $mark) -and (Get-Item -LiteralPath $mark).LastWriteTime -gt (Get-Date).AddDays(-1)) { return }
+    try {
+        Ensure-Root
+        Set-Content -LiteralPath $mark -Value "" -Encoding ascii
     } catch {}
+    [Console]::Out.Write('{"systemMessage":"' + $messages[$script:refused] + '"}' + "`n")
 }
 
 # Queues are kept per API key and server, so a leftover queue is only ever
 # sent with the key that queued it, to the server it was meant for. The folder
 # name holds a hash, never the key.
 $sha = [Security.Cryptography.SHA256]::Create()
-$fingerprint = (-join ($sha.ComputeHash($utf8.GetBytes($env:MEMBRAINCE_API_KEY + "`n" + $base)) | ForEach-Object { $_.ToString("x2") })).Substring(0, 16)
+$fingerprint = (-join ($sha.ComputeHash($utf8.GetBytes($key + "`n" + $base)) | ForEach-Object { $_.ToString("x2") })).Substring(0, 16)
 $data = if ($env:PLUGIN_DATA) { $env:PLUGIN_DATA } else { $env:TEMP }
 $root = Join-Path $data "membraince-queue-$fingerprint"
 
@@ -114,7 +153,7 @@ function Flush([string]$Dir, [int]$Seconds) {
             $bytes = [IO.File]::ReadAllBytes($file.FullName)
             $body.Write($bytes, 0, $bytes.Length)
         }
-        try { [void](Send "transcript" "application/x-ndjson" $body.ToArray() $Seconds) } catch { return $false }
+        try { [void](Send "transcript" "application/x-ndjson" $body.ToArray() $Seconds) } catch { Note-Refusal $_; return $false }
         foreach ($file in $files) { Remove-Item -LiteralPath $file.FullName -Force }
         return $true
     } finally {
@@ -147,12 +186,14 @@ try {
     $hook = $hookInput | ConvertFrom-Json
     $session = "$($hook.session_id)" -replace "[^A-Za-z0-9_-]", ""
     if ($Action -eq "session-start") {
-        Recall "session-start"
+        $context = Recall "session-start"
         if ($autoSave) { Recover $session }
+        # Codex reads the output either as context or as one JSON object, never both.
+        if (-not $context) { Show-Notice }
     }
     if ($Action -eq "prompt") {
         if ($autoSave -and $session) { Queue-Prompt $session }
-        Recall "prompt"
+        [void](Recall "prompt")
     }
     if ($Action -eq "transcript" -and $autoSave -and $session) {
         $dir = Join-Path $root $session

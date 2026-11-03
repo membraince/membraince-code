@@ -16,7 +16,9 @@
 # save sends this session's queue as one save and deletes the files it sent once
 #   the save succeeds; a failed save keeps them for later.
 # Requests go to the plugin's Server URL setting (https://membraince.com by
-# default) with your key. Any failure prints nothing and never blocks Claude Code.
+# default) with your key. A failure never blocks Claude Code. When MemBraince
+# refuses the key (no subscription, a limit reached, ...), session start tells
+# you why in one line, at most once a day; Claude never sees it.
 key="${CLAUDE_PLUGIN_OPTION_API_KEY:-}"
 [ -n "$key" ] || exit 0
 umask 077 # queued prompts are readable by your account only
@@ -24,6 +26,7 @@ action="${1:-}"
 user="${CLAUDE_PLUGIN_OPTION_USER_ID:-default}"
 project="${CLAUDE_PLUGIN_OPTION_PROJECT:-}"
 server="${CLAUDE_PLUGIN_OPTION_SERVER_URL:-https://membraince.com/v1/mcp}"
+server="${server%/}"
 base="${server%/v1/mcp}"
 # JSON keeps newlines inside strings escaped, so dropping raw ones keeps it one line.
 input="$(tr -d '\r\n')"
@@ -34,14 +37,38 @@ session="$(printf '%s' "$input" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:
 fingerprint="$(printf '%s\n%s\n%s\n%s' "$key" "$user" "$project" "$base" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-16)"
 root="${CLAUDE_PLUGIN_DATA:-${TMPDIR:-/tmp}}/membraince-queue-${fingerprint}"
 
-post() { # post <route> <seconds> <content type>, body on stdin
-  curl -fsS --max-time "$2" \
+post() { # post <route> <seconds> <content type>, body on stdin; sets answer and status
+  local out sent
+  answer=""
+  out="$(curl -sS --max-time "$2" \
     -H "X-API-Key: ${key}" \
     -H "X-MemBraince-User: ${user}" \
     -H "X-MemBraince-Project: ${project}" \
     -H "Content-Type: $3" \
     --data-binary @- \
-    "${base}/v1/integrations/claude-code/$1" 2>/dev/null
+    -w '\n%{http_code}' \
+    "${base}/v1/integrations/claude-code/$1" 2>/dev/null)"
+  sent=$?
+  status="${out##*$'\n'}"
+  [ "$sent" = 0 ] || return 1
+  case "$status" in 2??) answer="${out%$'\n'*}" ;; *) return 1 ;; esac
+}
+
+# MemBraince's refusal in one line for you, as a warning Claude Code shows and
+# Claude never sees. The same problem is told at most once a day.
+notice() {
+  local message mark="${root}/notice-${status}"
+  case "$status" in
+    401) message="MemBraince didn't accept your API key, so memory is off. Check it in /plugin \\u2192 MemBraince, or create a new one at https://membraince.com/portal." ;;
+    402) message="MemBraince memory is off until you subscribe at https://membraince.com/portal. What you type stays queued on this computer for up to 30 days and is saved once you do." ;;
+    403) message="MemBraince doesn't know the project set in /plugin \\u2192 MemBraince for this key. Use a project name from https://membraince.com/portal, or leave it empty." ;;
+    423) message="This API key can't unlock your encrypted MemBraince memories. Create a new key at https://membraince.com/portal and put it in /plugin \\u2192 MemBraince." ;;
+    429) message="This API key has reached a MemBraince limit, so memory is paused. Usage is on https://membraince.com/portal; what you type stays queued and is saved later." ;;
+    *) return 0 ;;
+  esac
+  [ -n "$(find "$mark" -mmin -1440 2>/dev/null)" ] && return 0
+  ensure_root && : >"$mark"
+  printf '{"systemMessage":"%s"}\n' "$message"
 }
 
 ensure_root() {
@@ -106,7 +133,7 @@ flush() { # flush <session folder> <seconds>; succeeds when nothing is left to s
   # passes for a sent save and deletes prompts that weren't sent.
   if [ ! -e "${files[0]}" ]; then
     sent=0
-  elif cat "${files[@]}" >"$body" && post transcript "$2" application/x-ndjson <"$body" >/dev/null; then
+  elif cat "${files[@]}" >"$body" && post transcript "$2" application/x-ndjson <"$body"; then
     rm -f "${files[@]}"
     sent=0
   fi
@@ -147,10 +174,17 @@ names_secret() {
 [ "${CLAUDE_PLUGIN_OPTION_AUTO_SAVE:-true}" = "false" ] && auto_save=false || auto_save=true
 [ "${CLAUDE_PLUGIN_OPTION_AUTO_RECALL:-true}" = "false" ] && auto_recall=false || auto_recall=true
 [ "${CLAUDE_PLUGIN_OPTION_LEARN_CODE:-true}" = "false" ] && learn_code=false || learn_code=true
+status=""
 case "$action" in
   session-start)
-    [ "$auto_recall" = true ] && printf '%s' "$input" | post session-start 8 application/json
+    context=""
+    if [ "$auto_recall" = true ] && post session-start 8 application/json < <(printf '%s' "$input"); then
+      context="$answer"
+      printf '%s' "$context"
+    fi
     [ "$auto_save" = true ] && recover
+    # Claude Code reads the output either as context or as one JSON object, never both.
+    [ -n "$context" ] || notice
     ;;
   queue)
     [ "$auto_save" = true ] && queue_prompt
@@ -159,7 +193,7 @@ case "$action" in
     [ "$auto_save" = true ] && [ "$learn_code" = true ] && ! names_secret && queue_prompt
     ;;
   prompt)
-    [ "$auto_recall" = true ] && printf '%s' "$input" | post prompt 8 application/json
+    [ "$auto_recall" = true ] && post prompt 8 application/json < <(printf '%s' "$input") && printf '%s' "$answer"
     ;;
   save)
     [ "$auto_save" = true ] && [ -n "$session" ] && [ -d "${root}/${session}" ] && flush "${root}/${session}" 20

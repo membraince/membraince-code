@@ -9,9 +9,15 @@
 # transcript sends this session's queued prompts as one save and deletes the
 #   files it sent once the save succeeds; a failed save keeps them for later.
 # Only the prompts you type are queued and sent for saving. Requests go to
-# MEMBRAINCE_URL (https://membraince.com by default) with MEMBRAINCE_API_KEY.
-# Any failure prints nothing and never blocks Codex.
-[ -n "${MEMBRAINCE_API_KEY:-}" ] || exit 0
+# MEMBRAINCE_URL (https://membraince.com by default) with your key:
+# MEMBRAINCE_API_KEY, or else the file ~/.config/membraince/api-key, which the
+# Codex app can read even when it doesn't see your shell's variables.
+# A failure never blocks Codex. When MemBraince refuses the key (no
+# subscription, a limit reached, ...), session start tells you why in one
+# line, at most once a day; the model never sees it.
+key="${MEMBRAINCE_API_KEY:-}"
+[ -n "$key" ] || key="$(tr -d '[:space:]' <"${HOME}/.config/membraince/api-key" 2>/dev/null)"
+[ -n "$key" ] || exit 0
 umask 077 # queued prompts are readable by your account only
 action="${1:-}"
 base="${MEMBRAINCE_URL:-https://membraince.com}"
@@ -24,19 +30,44 @@ session="$(field session_id | tr -cd 'A-Za-z0-9_-')"
 # Queues are kept per API key and server, so a leftover queue is only ever
 # sent with the key that queued it, to the server it was meant for. The folder
 # name holds a hash, never the key.
-fingerprint="$(printf '%s\n%s' "$MEMBRAINCE_API_KEY" "$base" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-16)"
+fingerprint="$(printf '%s\n%s' "$key" "$base" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-16)"
 root="${PLUGIN_DATA:-${TMPDIR:-/tmp}}/membraince-queue-${fingerprint}"
 
-post() { # post <route> <seconds> <content type>, body on stdin
-  curl -fsS --max-time "$2" \
-    -H "X-API-Key: ${MEMBRAINCE_API_KEY}" \
+post() { # post <route> <seconds> <content type>, body on stdin; sets answer and status
+  local out sent
+  answer=""
+  out="$(curl -sS --max-time "$2" \
+    -H "X-API-Key: ${key}" \
     -H "Content-Type: $3" \
     --data-binary @- \
-    "${base}/v1/integrations/codex/$1" 2>/dev/null
+    -w '\n%{http_code}' \
+    "${base}/v1/integrations/codex/$1" 2>/dev/null)"
+  sent=$?
+  status="${out##*$'\n'}"
+  [ "$sent" = 0 ] || return 1
+  case "$status" in 2??) answer="${out%$'\n'*}" ;; *) return 1 ;; esac
 }
 
-recall() {
-  [ "${MEMBRAINCE_AUTO_RECALL:-true}" = "false" ] || printf '%s' "$input" | post "$1" 8 application/json
+recall() { # prints what MemBraince adds; fails when nothing was recalled
+  [ "${MEMBRAINCE_AUTO_RECALL:-true}" = "false" ] && return 1
+  post "$1" 8 application/json < <(printf '%s' "$input") && printf '%s' "$answer"
+}
+
+# MemBraince's refusal in one line for you, as a warning Codex shows and the
+# model never sees. The same problem is told at most once a day.
+notice() {
+  local message mark="${root}/notice-${status}"
+  case "$status" in
+    401) message="MemBraince didn't accept your API key (MEMBRAINCE_API_KEY or ~/.config/membraince/api-key), so memory is off. Check it, or create a new key at https://membraince.com/portal." ;;
+    402) message="MemBraince memory is off until you subscribe at https://membraince.com/portal. What you type stays queued on this computer for up to 30 days and is saved once you do." ;;
+    403) message="MemBraince refused this key's project. Check the key's projects at https://membraince.com/portal." ;;
+    423) message="This API key can't unlock your encrypted MemBraince memories. Create a new key at https://membraince.com/portal and use it in place of this one." ;;
+    429) message="This API key has reached a MemBraince limit, so memory is paused. Usage is on https://membraince.com/portal; what you type stays queued and is saved later." ;;
+    *) return 0 ;;
+  esac
+  [ -n "$(find "$mark" -mmin -1440 2>/dev/null)" ] && return 0
+  ensure_root && : >"$mark"
+  printf '{"systemMessage":"%s"}\n' "$message"
 }
 
 ensure_root() {
@@ -101,7 +132,7 @@ flush() { # flush <session folder> <seconds>; succeeds when nothing is left to s
   # passes for a sent save and deletes prompts that weren't sent.
   if [ ! -e "${files[0]}" ]; then
     sent=0
-  elif cat "${files[@]}" >"$body" && post transcript "$2" application/x-ndjson <"$body" >/dev/null; then
+  elif cat "${files[@]}" >"$body" && post transcript "$2" application/x-ndjson <"$body"; then
     rm -f "${files[@]}"
     sent=0
   fi
@@ -133,10 +164,14 @@ recover() {
 }
 
 [ "${MEMBRAINCE_AUTO_SAVE:-true}" = "false" ] && auto_save=false || auto_save=true
+status=""
 case "$action" in
   session-start)
-    recall session-start
+    context=""
+    recall session-start && context="$answer"
     [ "$auto_save" = true ] && recover
+    # Codex reads the output either as context or as one JSON object, never both.
+    [ -n "$context" ] || notice
     ;;
   prompt)
     [ "$auto_save" = true ] && queue_prompt

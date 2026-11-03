@@ -11,7 +11,8 @@ uploaded line as received to <folder>/received.txt. Every request's path is
 appended to <folder>/routes.txt. While <folder>/fail exists, saves answer 500. While
 <folder>/drop exists, a save is recorded and the connection closed without an
 answer, like a response lost on the way back. While <folder>/slow exists, saves
-take 10 seconds.
+take 10 seconds. While <folder>/status exists, every request is answered with
+the status code it holds, like MemBraince refusing a key.
 Recall routes answer with a fixed line so tests can see recall output.
 """
 
@@ -30,6 +31,11 @@ class Handler(BaseHTTPRequestHandler):
         body = self.rfile.read(int(self.headers.get("Content-Length") or 0)).decode("utf-8")
         with open(os.path.join(folder, "routes.txt"), "a", encoding="utf-8", newline="\n") as log:
             log.write(self.path + "\n")
+        refusal = os.path.join(folder, "status")
+        if os.path.exists(refusal):
+            with open(refusal, encoding="utf-8") as handle:
+                self.reply(int(handle.read().strip()), b'{"detail": "request cannot be admitted"}')
+            return
         if not self.path.endswith("/transcript"):
             self.reply(200, b"Memories from MemBraince: (test)")
             return

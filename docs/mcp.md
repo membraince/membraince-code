@@ -11,11 +11,16 @@ endpoint, `https://membraince.com/v1/mcp` (Streamable HTTP, JSON responses). It 
 
 ## Authentication
 
-Send an API key from https://membraince.com/portal in the `X-API-Key` header. The key decides
-the account, and calls count toward the same plan and quotas as the REST API.
+MCP clients can connect in two ways:
 
-Clients that can't set headers can sign in with OAuth instead (see
-[claude.ai and the Claude apps](#claudeai-and-the-claude-apps)).
+- **Sign in in the browser.** Clients that support MCP sign-in (OAuth) need only the URL. They open a
+  MemBraince sign-in page, where you choose the project the connection saves to and, if you've created
+  API keys, unlock your memories once with one of them or your recovery code. The connection then
+  appears in the portal as an API key; revoke it there to disconnect.
+- **An API key.** Send a key from https://membraince.com/portal in the `X-API-Key` header.
+
+Either way, calls count toward your plan and need an active subscription. Without one, the tools
+answer with a message saying so.
 
 ## Optional headers
 
@@ -30,8 +35,17 @@ share its memories.
 
 ## Any MCP client
 
-Point a client that supports Streamable HTTP with custom headers at the endpoint. A typical
-configuration:
+Add a Streamable HTTP server with the URL `https://membraince.com/v1/mcp`. If the client supports
+MCP sign-in, that's all: it asks you to sign in the first time. In Claude Code without the plugin,
+for example:
+
+```bash
+claude mcp add --transport http membraince https://membraince.com/v1/mcp
+```
+
+then run `/mcp`, choose membraince, and sign in.
+
+For a client that can't sign in, send an API key instead:
 
 ```json
 {

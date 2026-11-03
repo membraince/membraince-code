@@ -11,8 +11,10 @@ Long-term memory for [OpenCode](https://opencode.ai), backed by [MemBraince](htt
 
 ## Setup
 
-1. Create an account and an API key at https://membraince.com/portal, and put it in the
-   `MEMBRAINCE_API_KEY` environment variable.
+1. Create an account at https://membraince.com/portal, subscribe, and create an API key. Put it in the
+   `MEMBRAINCE_API_KEY` environment variable (Windows PowerShell:
+   `[Environment]::SetEnvironmentVariable("MEMBRAINCE_API_KEY", "<key>", "User")`; macOS and Linux:
+   `export` it in your shell profile).
 2. Add the MCP server to your OpenCode config (`~/.config/opencode/opencode.json`, or
    `opencode.json` in a project):
 
@@ -41,6 +43,11 @@ Long-term memory for [OpenCode](https://opencode.ai), backed by [MemBraince](htt
 The plugin has no dependencies. Automatic recall uses OpenCode's
 `experimental.chat.system.transform` hook, so a future OpenCode release may change how it works;
 the memory tools keep working either way.
+
+### Check it works
+
+Tell OpenCode "Remember that I prefer short commit messages." In a new session, ask "How do I like my commit
+messages?" If MemBraince can't use your key, OpenCode shows a MemBraince warning saying why.
 
 ### Settings
 

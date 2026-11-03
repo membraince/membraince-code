@@ -139,6 +139,62 @@ try {
     $sent = @(Uploaded | Where-Object { $_ -match " stress " })
     Check "under load, every prompt is sent exactly once" { $sent.Count -eq 40 -and @($sent | Sort-Object -Unique).Count -eq 40 }
     Check "nothing is left queued" { (Queued) -eq 0 }
+
+    "== codex (PowerShell): telling you when MemBraince refuses the key"
+    function Output([string]$Action, [string]$Json, [string]$Key = "key-r") {
+        $env:MEMBRAINCE_API_KEY = $Key
+        $env:MEMBRAINCE_URL = "http://127.0.0.1:$port"
+        $env:PLUGIN_DATA = $data
+        ($Json | powershell -NoProfile -ExecutionPolicy Bypass -File $script $Action | Out-String).Trim()
+    }
+    function Start-Output([string]$Session) { Output "session-start" ('{"hook_event_name":"SessionStart","session_id":"' + $Session + '","cwd":"C:\\w\\app"}') }
+    # The output is one JSON warning and nothing else.
+    function Is-Notice([string]$Text, [string]$Start) {
+        try { $notice = $Text | ConvertFrom-Json } catch { return $false }
+        @($notice.PSObject.Properties).Count -eq 1 -and $notice.systemMessage.StartsWith($Start)
+    }
+    $status = Join-Path $work "status"
+    Check "a session start prints what recall returns" { (Start-Output "r1") -eq "Memories from MemBraince: (test)" }
+    Set-Content -LiteralPath $status -Value "402" -Encoding ascii
+    Check "a refused key makes session start print one warning, as JSON only" { Is-Notice (Start-Output "r2") "MemBraince memory is off until you subscribe" }
+    Check "the same refusal again the same day prints nothing" { -not (Start-Output "r3") }
+    Set-Content -LiteralPath $status -Value "401" -Encoding ascii
+    Check "a different refusal is told" { Is-Notice (Start-Output "r4") "MemBraince didn't accept your API key" }
+    $env:MEMBRAINCE_AUTO_SAVE = "false"
+    Check "a refused prompt prints nothing" { -not (Output "prompt" '{"hook_event_name":"UserPromptSubmit","session_id":"r9","prompt":"why"}') }
+    Remove-Item Env:\MEMBRAINCE_AUTO_SAVE
+    Set-Content -LiteralPath $status -Value "500" -Encoding ascii
+    Check "a server error stays silent" { -not (Start-Output "r5") }
+    Set-Content -LiteralPath $status -Value "429" -Encoding ascii
+    Remove-Item "$work\uploaded.txt" -ErrorAction SilentlyContinue
+    Prompt "r6" "queued while refused" "key-r"
+    Save "r6" "key-r"
+    Check "a refused save keeps the queue" { (Queued) -eq 1 }
+    $env:MEMBRAINCE_AUTO_RECALL = "false"
+    Check "with recall off, session start tells about a refused save" { Is-Notice (Start-Output "r7") "This API key has reached a MemBraince limit" }
+    Remove-Item Env:\MEMBRAINCE_AUTO_RECALL
+    Remove-Item -LiteralPath $status
+    [void](Start-Output "r8")
+    Check "once MemBraince accepts the key, the queue is saved" { ((Uploaded) -join "|") -eq "key-r queued while refused" -and (Queued) -eq 0 }
+    "== codex (PowerShell): the key file"
+    $keyHome = Join-Path $work "home"
+    [void](New-Item -ItemType Directory -Force (Join-Path $keyHome ".config\membraince"))
+    [IO.File]::WriteAllText((Join-Path $keyHome ".config\membraince\api-key"), "key-f`n")
+    $realProfile = $env:USERPROFILE
+    $env:USERPROFILE = $keyHome
+    try {
+        Remove-Item "$work\uploaded.txt" -ErrorAction SilentlyContinue
+        Check "with no MEMBRAINCE_API_KEY, session start uses the key file" { (Output "session-start" '{"hook_event_name":"SessionStart","session_id":"f0","cwd":"C:\\w\\app"}' "") -eq "Memories from MemBraince: (test)" }
+        Run "prompt" "" '{"hook_event_name":"UserPromptSubmit","session_id":"f1","prompt":"sent with the key file"}'
+        Run "transcript" "" '{"hook_event_name":"PreCompact","session_id":"f1"}'
+        Check "with no MEMBRAINCE_API_KEY, saves use the key file" { ((Uploaded) -join "|") -eq "key-f sent with the key file" }
+        Remove-Item "$work\uploaded.txt"
+        Run "prompt" "key-a" '{"hook_event_name":"UserPromptSubmit","session_id":"f2","prompt":"sent with the variable"}'
+        Run "transcript" "key-a" '{"hook_event_name":"PreCompact","session_id":"f2"}'
+        Check "MEMBRAINCE_API_KEY wins over the key file" { ((Uploaded) -join "|") -eq "key-a sent with the variable" }
+    } finally {
+        $env:USERPROFILE = $realProfile
+    }
 } finally {
     Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue
     Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue

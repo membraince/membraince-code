@@ -25,7 +25,7 @@ check() { # check <description> <shell condition>
 use_agent() {
   agent="$1"
   data="$work/$agent-data"
-  rm -rf "$data" "$work/uploaded.txt" "$work/received.txt" "$work/fail" "$work/drop" "$work/slow"
+  rm -rf "$data" "$work/uploaded.txt" "$work/received.txt" "$work/fail" "$work/drop" "$work/slow" "$work/status"
   : >"$work/uploaded.txt"
   if [ "$agent" = codex ]; then
     script="$repo/integrations/codex/scripts/membraince-hook.sh"
@@ -38,7 +38,7 @@ use_agent() {
 run() { # run <action> <key> <json input>; HOST picks the address the hooks use
   local host="${HOST:-127.0.0.1}"
   printf '%s' "$3" | MEMBRAINCE_API_KEY="$2" MEMBRAINCE_URL="http://${host}:${port}" PLUGIN_DATA="$data" \
-    CLAUDE_PLUGIN_OPTION_API_KEY="$2" CLAUDE_PLUGIN_OPTION_SERVER_URL="http://${host}:${port}/v1/mcp" \
+    CLAUDE_PLUGIN_OPTION_API_KEY="$2" CLAUDE_PLUGIN_OPTION_SERVER_URL="http://${host}:${port}/v1/mcp${URL_END:-}" \
     CLAUDE_PLUGIN_DATA="$data" bash "$script" "$1"
 }
 prompt() { run "$queue_action" "${3:-key-a}" "{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"$1\",\"cwd\":\"/w/app\",\"prompt\":\"$2\"}"; }
@@ -200,6 +200,45 @@ check "with Learn the repository off, a prompt still recalls" 'grep -q "/v1/inte
 CLAUDE_PLUGIN_OPTION_AUTO_RECALL=false run prompt key-a "$asked" >/dev/null
 check "with recall off, a prompt asks for nothing" '[ ! -s "$work/routes.txt" ]'
 
+is_notice() { # is_notice <output> <start of the message>: the output is one JSON warning and nothing else
+  "$py" -c 'import json, sys; m = json.loads(sys.argv[1]); assert list(m) == ["systemMessage"] and m["systemMessage"].startswith(sys.argv[2])' "$1" "$2" 2>/dev/null
+}
+for agent in codex claude-code; do
+  echo "== $agent: telling you when MemBraince refuses the key"
+  use_agent "$agent"
+  check "a session start prints what recall returns" '[ "$(start r1)" = "Memories from MemBraince: (test)" ]'
+  [ "$agent" = claude-code ] && check "a Server URL ending in a slash still reaches MemBraince" '[ "$(URL_END=/ start r1)" = "Memories from MemBraince: (test)" ]'
+  echo 402 >"$work/status"
+  check "a refused key makes session start print one warning, as JSON only" 'is_notice "$(start r2)" "MemBraince memory is off until you subscribe"'
+  check "the same refusal again the same day prints nothing" '[ -z "$(start r3)" ]'
+  echo 401 >"$work/status"
+  check "a different refusal is told" 'is_notice "$(start r4)" "MemBraince didn"'
+  check "a refused prompt prints nothing" '[ -z "$(MEMBRAINCE_AUTO_SAVE=false run prompt key-a "{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"r9\",\"prompt\":\"why\"}")" ]'
+  echo 500 >"$work/status"
+  check "a server error stays silent" '[ -z "$(start r5)" ]'
+  echo 429 >"$work/status"
+  prompt r6 "queued while refused" >/dev/null
+  save r6
+  check "a refused save keeps the queue" '[ "$(queued)" = 1 ]'
+  check "with recall off, session start tells about a refused save" 'is_notice "$(CLAUDE_PLUGIN_OPTION_AUTO_RECALL=false MEMBRAINCE_AUTO_RECALL=false start r7)" "This API key has reached a MemBraince limit"'
+  rm -f "$work/status"
+  : >"$work/uploaded.txt"
+  start r8 >/dev/null
+  check "once MemBraince accepts the key, the queue is saved" '[ "$(uploaded)" = "key-a queued while refused" ] && [ "$(queued)" = 0 ]'
+done
+echo "== codex: the key file"
+use_agent codex
+mkdir -p "$work/home/.config/membraince"
+printf 'key-f\n' >"$work/home/.config/membraince/api-key"
+from_file() { HOME="$work/home" run "$1" "$2" "{\"hook_event_name\":\"$3\",\"session_id\":\"f1\",\"cwd\":\"/w/app\",\"prompt\":\"${4:-}\"}"; }
+check "with no MEMBRAINCE_API_KEY, session start uses the key file" '[ "$(from_file session-start "" SessionStart)" = "Memories from MemBraince: (test)" ]'
+from_file prompt "" UserPromptSubmit "sent with the key file" >/dev/null
+from_file transcript "" PreCompact >/dev/null
+check "with no MEMBRAINCE_API_KEY, saves use the key file" '[ "$(uploaded)" = "key-f sent with the key file" ]'
+: >"$work/uploaded.txt"
+from_file prompt key-a UserPromptSubmit "sent with the variable" >/dev/null
+from_file transcript key-a PreCompact >/dev/null
+check "MEMBRAINCE_API_KEY wins over the key file" '[ "$(uploaded)" = "key-a sent with the variable" ]'
 echo
 [ "$failures" = 0 ] && echo "all hook tests passed" || echo "$failures hook test(s) failed"
 exit "$failures"

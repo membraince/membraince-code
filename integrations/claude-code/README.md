@@ -16,7 +16,7 @@ Long-term memory for Claude Code, backed by [MemBraince](https://membraince.com)
 
 ## Setup
 
-1. Create an account and an API key at https://membraince.com/portal.
+1. Create an account at https://membraince.com/portal, subscribe, and create an API key.
 2. In Claude Code, add this repository as a marketplace and install the plugin:
 
    ```
@@ -28,6 +28,16 @@ Long-term memory for Claude Code, backed by [MemBraince](https://membraince.com)
 
 Settings (`/plugin`, then MemBraince): API key, memory owner, project, server URL, the two
 automatic behaviours, and Learn the repository. The hooks need `bash` and `curl`, which Claude Code already requires.
+
+### Check it works
+
+Tell Claude "Remember that I prefer short commit messages." Start a new session and ask "How do I like my commit
+messages?" Claude answers from MemBraince, and the key's "Last used" time in the portal changes.
+
+If MemBraince can't use your key, a session start shows one MemBraince warning saying why: no subscription, a key
+it doesn't accept, a project name it doesn't know, a key that can't unlock your memories, or a limit reached. The
+warning repeats at most once a day. Until it's fixed, nothing is recalled, and what you type stays queued on this
+computer for up to 30 days.
 
 ## What the plugin sends
 

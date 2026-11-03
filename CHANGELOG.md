@@ -44,4 +44,14 @@
   prompt gets notes on the code it names instead of a memory search (the session already starts with the
   project's rules and code map); elsewhere it still gets related memories. Needs MemBraince Premium 0.6.19
   or later.
-
+- Claude Code plugin 0.9.1, Codex plugin 0.4.2 and OpenCode: when MemBraince refuses the key (no subscription,
+  a key it doesn't accept, an unknown project, a key that can't unlock your memories, or a limit reached),
+  session start shows you one warning saying why, at most once a day per problem; the agent never sees it.
+  OpenCode shows it as a toast. Until now these looked the same as having no memories. What a successful
+  request sends and adds to the session is unchanged.
+- Claude Code plugin 0.9.1: a Server URL ending in `/` works.
+- Codex plugin 0.4.2: when `MEMBRAINCE_API_KEY` isn't set, the hooks read the key from
+  `~/.config/membraince/api-key`, which the Codex app finds even when it doesn't see your shell's variables.
+- Setup pages say to subscribe first, put the connector first for Claude Desktop, give Codex's steps in order
+  with the commands for each OS, and end with a "Check it works" step. docs/mcp.md leads with signing in in
+  the browser. The Desktop extension links straight to its file.

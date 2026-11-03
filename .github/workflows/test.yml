@@ -23,3 +23,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/hooks.ps1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: OpenCode plugin
+        shell: bash
+        run: node tests/opencode.mjs

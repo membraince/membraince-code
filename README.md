@@ -33,15 +33,17 @@ What you get in a connected agent:
 
 ## Get started
 
-1. Create an account and an API key at https://membraince.com/portal.
-2. Pick your tool in the table above and follow its page.
+1. Create an account at https://membraince.com/portal and subscribe.
+2. Pick your tool in the table above and follow its page. Claude Code, for example:
 
-Claude Code, for example:
+   ```
+   /plugin marketplace add membraince/membraince-code
+   /plugin install membraince@membraince
+   ```
 
-```
-/plugin marketplace add membraince/membraince-code
-/plugin install membraince@membraince
-```
+   then paste an API key from the portal when asked.
+3. Check it works: tell your agent "Remember that I prefer short commit messages", then ask about it in a new
+   session.
 
 ## How it works
 
