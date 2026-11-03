@@ -25,7 +25,14 @@ check() { # check <description> <shell condition>
 use_agent() {
   agent="$1"
   data="$work/$agent-data"
-  rm -rf "$data" "$work/uploaded.txt" "$work/received.txt" "$work/fail" "$work/drop" "$work/slow" "$work/status"
+  rm -f "$work/slow"
+  # A slow save whose hook gave up still lands when the server wakes; wait for it,
+  # so it can't show up in the next section's uploads.
+  for _ in $(seq 1 150); do
+    ls "$work"/busy-* >/dev/null 2>&1 || break
+    sleep 0.1
+  done
+  rm -rf "$data" "$work/uploaded.txt" "$work/received.txt" "$work/fail" "$work/drop" "$work/status"
   : >"$work/uploaded.txt"
   if [ "$agent" = codex ]; then
     script="$repo/integrations/codex/scripts/membraince-hook.sh"

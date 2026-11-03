@@ -12,7 +12,9 @@ appended to <folder>/routes.txt. While <folder>/fail exists, saves answer 500. W
 <folder>/drop exists, a save is recorded and the connection closed without an
 answer, like a response lost on the way back. While <folder>/slow exists, saves
 take 10 seconds. While <folder>/status exists, every request is answered with
-the status code it holds, like MemBraince refusing a key.
+the status code it holds, like MemBraince refusing a key. While a save is being
+handled, <folder>/busy-<thread> exists, so a test can wait for slow saves whose
+client gave up before it resets uploaded.txt.
 Recall routes answer with a fixed line so tests can see recall output.
 """
 
@@ -39,6 +41,14 @@ class Handler(BaseHTTPRequestHandler):
         if not self.path.endswith("/transcript"):
             self.reply(200, b"Memories from MemBraince: (test)")
             return
+        busy = os.path.join(folder, f"busy-{threading.get_ident()}")
+        open(busy, "w").close()
+        try:
+            self.save(body)
+        finally:
+            os.remove(busy)
+
+    def save(self, body):
         time.sleep(10 if os.path.exists(os.path.join(folder, "slow")) else 0.2)
         if os.path.exists(os.path.join(folder, "fail")):
             self.reply(500, b"")

@@ -33,6 +33,11 @@ function Save([string]$Session, [string]$Key = "key-a", [string]$Event = "PreCom
 function Start-Session([string]$Session, [string]$Key = "key-a") {
     Run "session-start" $Key ('{"hook_event_name":"SessionStart","session_id":"' + $Session + '","cwd":"C:\\w\\app"}')
 }
+# A slow save whose hook gave up still lands when the server wakes; wait for it,
+# so it can't show up in a later section's uploads.
+function Wait-Idle {
+    for ($i = 0; $i -lt 150 -and @(Get-ChildItem -Path $work -Filter "busy-*" -ErrorAction SilentlyContinue).Count; $i++) { Start-Sleep -Milliseconds 100 }
+}
 function Received { if (Test-Path "$work\received.txt") { [IO.File]::ReadAllText("$work\received.txt") } else { "" } }
 function Uploaded { if (Test-Path "$work\uploaded.txt") { @(Get-Content "$work\uploaded.txt") } else { @() } }
 function Queued { @(Get-ChildItem -Path $data -Recurse -Filter "*.json" -File -ErrorAction SilentlyContinue).Count }
@@ -141,6 +146,7 @@ try {
     Check "nothing is left queued" { (Queued) -eq 0 }
 
     "== codex (PowerShell): telling you when MemBraince refuses the key"
+    Wait-Idle
     function Output([string]$Action, [string]$Json, [string]$Key = "key-r") {
         $env:MEMBRAINCE_API_KEY = $Key
         $env:MEMBRAINCE_URL = "http://127.0.0.1:$port"
@@ -177,6 +183,7 @@ try {
     [void](Start-Output "r8")
     Check "once MemBraince accepts the key, the queue is saved" { ((Uploaded) -join "|") -eq "key-r queued while refused" -and (Queued) -eq 0 }
     "== codex (PowerShell): the key file"
+    Wait-Idle
     $keyHome = Join-Path $work "home"
     [void](New-Item -ItemType Directory -Force (Join-Path $keyHome ".config\membraince"))
     [IO.File]::WriteAllText((Join-Path $keyHome ".config\membraince\api-key"), "key-f`n")
