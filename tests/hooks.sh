@@ -170,7 +170,14 @@ for agent in codex claude-code; do
   wait "${pids[@]}"
   for _ in 1 2 3 4 5; do save s8; done
   # Only this test's prompts count: the slow test's uploads can still land late.
-  check "under load, every prompt is sent exactly once" '[ "$(uploaded | grep -c " stress ")" -eq 60 ] && [ "$(uploaded | grep " stress " | sort -u | wc -l)" -eq 60 ]'
+  stress="$(uploaded | grep " stress " | sort)"
+  check "under load, every prompt is sent exactly once" '[ "$(printf "%s\n" "$stress" | grep -c .)" -eq 60 ] && [ "$(printf "%s\n" "$stress" | uniq | grep -c .)" -eq 60 ]'
+  # On a failure, say which prompts were sent twice or not at all.
+  if [ "$(printf '%s\n' "$stress" | uniq | grep -c .)" -ne 60 ] || [ "$(printf '%s\n' "$stress" | grep -c .)" -ne 60 ]; then
+    echo "       twice: $(printf '%s\n' "$stress" | uniq -d | sed 's/.* stress //' | tr '\n' ' ')"
+    echo "       missing: $(for i in $(seq -w 1 60); do printf '%s\n' "$stress" | grep -q " stress $i\$" || printf '%s ' "$i"; done)"
+    echo "       still queued: $(queued)"
+  fi
   check "nothing is left queued" '[ "$(queued)" = 0 ]'
 done
 
