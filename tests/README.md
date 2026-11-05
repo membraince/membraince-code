@@ -28,3 +28,10 @@ The OpenCode plugin's tests need Node 18 or later:
 ```bash
 node tests/opencode.mjs
 ```
+
+The Hermes plugin's tests run the plugin against `fake_server.py` with a small stand-in for the base class
+Hermes gives it, so they need only Python 3:
+
+```bash
+python tests/hermes.py
+```

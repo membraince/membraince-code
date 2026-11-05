@@ -1,0 +1,8 @@
+name: membraince
+version: 0.1.0
+description: "MemBraince: long-term memory across your tools, with automatic recall and save"
+requires_env:
+  - name: MEMBRAINCE_API_KEY
+    description: "Your MemBraince API key"
+    url: https://membraince.com/portal
+    secret: true

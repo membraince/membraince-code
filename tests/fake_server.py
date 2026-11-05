@@ -14,8 +14,12 @@ answer, like a response lost on the way back. While <folder>/slow exists, saves
 take 10 seconds. While <folder>/status exists, every request is answered with
 the status code it holds, like MemBraince refusing a key. While a save is being
 handled, <folder>/busy-<thread> exists, so a test can wait for slow saves whose
-client gave up before it resets uploaded.txt.
-Recall routes answer with a fixed line so tests can see recall output.
+client gave up before it resets uploaded.txt. Every request is also appended
+to <folder>/requests.jsonl with its headers and body.
+Recall routes answer with a fixed line so tests can see recall output; while
+<folder>/recall-slow exists they take 2 seconds, and while <folder>/recall-empty
+exists they answer nothing. /v1/mcp answers a tool call as MCP does, with an
+error result while <folder>/tool-error exists.
 """
 
 import json
@@ -33,13 +37,24 @@ class Handler(BaseHTTPRequestHandler):
         body = self.rfile.read(int(self.headers.get("Content-Length") or 0)).decode("utf-8")
         with open(os.path.join(folder, "routes.txt"), "a", encoding="utf-8", newline="\n") as log:
             log.write(self.path + "\n")
+        with open(os.path.join(folder, "requests.jsonl"), "a", encoding="utf-8", newline="\n") as log:
+            log.write(json.dumps({"path": self.path, "headers": dict(self.headers.items()), "body": body}) + "\n")
         refusal = os.path.join(folder, "status")
         if os.path.exists(refusal):
             with open(refusal, encoding="utf-8") as handle:
                 self.reply(int(handle.read().strip()), b'{"detail": "request cannot be admitted"}')
             return
+        if self.path.endswith("/v1/mcp"):
+            call = json.loads(body)
+            result = {
+                "content": [{"type": "text", "text": "tool " + call["params"]["name"]}],
+                "isError": os.path.exists(os.path.join(folder, "tool-error")),
+            }
+            self.reply(200, json.dumps({"jsonrpc": "2.0", "id": call["id"], "result": result}).encode("utf-8"))
+            return
         if not self.path.endswith("/transcript"):
-            self.reply(200, b"Memories from MemBraince: (test)")
+            time.sleep(2 if os.path.exists(os.path.join(folder, "recall-slow")) else 0)
+            self.reply(200, b"" if os.path.exists(os.path.join(folder, "recall-empty")) else b"Memories from MemBraince: (test)")
             return
         busy = os.path.join(folder, f"busy-{threading.get_ident()}")
         open(busy, "w").close()

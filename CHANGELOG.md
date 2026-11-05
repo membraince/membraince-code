@@ -61,3 +61,7 @@
   prompt to paste into Codex that installs the plugin (`codex plugin add membraince@membraince`) and hands
   over to the skill. When the hooks find no key, session start says once a day to ask Codex to set up
   MemBraince, instead of staying silent.
+- Hermes plugin 0.1.0 (testing): a native Hermes memory provider in plain Python with no dependencies, the same
+  on Windows, macOS, and Linux. Memory tools, automatic recall and save, Learn the repository, and a `memory`
+  skill (Hermes 0.22 or later). One command installs it and asks for your key. In a group, channel, or thread
+  on a messaging platform, memory stays off. Needs MemBraince Premium 0.6.31 or later.
