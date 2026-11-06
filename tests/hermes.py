@@ -42,10 +42,13 @@ work = Path(tempfile.mkdtemp(prefix="membraince-hermes-"))
 server_folder = work / "server"
 server_folder.mkdir()
 server = subprocess.Popen([sys.executable, str(ROOT / "tests" / "fake_server.py"), str(server_folder)])
-for _ in range(200):
+for _ in range(300):
     if (server_folder / "port").exists():
         break
-    time.sleep(0.05)
+    time.sleep(0.1)
+else:
+    server.kill()
+    sys.exit("the fake server didn't start")
 URL = f"http://127.0.0.1:{(server_folder / 'port').read_text()}"
 
 failures = 0
