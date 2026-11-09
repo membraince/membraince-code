@@ -23,6 +23,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tests/hooks.ps1
 
 They need `bash`, `curl`, and Python 3. CI runs them on Linux, macOS, and Windows.
 
+The installer's tests run `install.sh` (and on Windows `install.ps1`) with a throwaway home folder and
+stand-ins for the `hermes` and `codex` commands. They check that a key is checked before it's saved, that
+a refused key is never saved, that the key file is private to your account, and that each agent found is
+set up the way its page says:
+
+```bash
+bash tests/install.sh
+```
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/install.ps1
+```
+
 The OpenCode plugin's tests need Node 18 or later:
 
 ```bash

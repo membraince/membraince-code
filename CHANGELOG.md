@@ -65,3 +65,7 @@
   on Windows, macOS, and Linux. Memory tools, automatic recall and save, Learn the repository, and a `memory`
   skill (Hermes 0.22 or later). One command installs it and asks for your key. In a group, channel, or thread
   on a messaging platform, memory stays off. Needs MemBraince Premium 0.6.31 or later.
+- Installer (`install.sh`, `install.ps1`): one command saves your API key in `~/.config/membraince/api-key` and
+  sets up OpenCode, Hermes, and Codex, whichever it finds. The key is checked with MemBraince before it's saved.
+- OpenCode plugin: reads the saved key when `MEMBRAINCE_API_KEY` isn't set, and adds the memory tools' server
+  itself, so setup no longer edits `opencode.json` or needs an environment variable.

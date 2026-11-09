@@ -9,22 +9,37 @@
 // (no subscription, a limit reached, ...), a warning tells you why, at most
 // once a day per problem; the model never sees it.
 //
-// The memory tools themselves come from the MCP server entry in opencode.json.
+// The memory tools come from the MemBraince MCP server, which the plugin adds to
+// OpenCode's configuration when it loads, unless opencode.json already has a
+// "membraince" entry. The key is MEMBRAINCE_API_KEY, or else the file
+// ~/.config/membraince/api-key that the installer writes.
+
+import { readFileSync } from "node:fs"
+import { homedir } from "node:os"
+import { join } from "node:path"
 
 const BASE = (process.env.MEMBRAINCE_URL || "https://membraince.com").replace(/\/+$/, "")
 const SAVE_INTERVAL_MS = 15 * 60 * 1000
 const TIMEOUT_MS = 8000
 const NOTICE_INTERVAL_MS = 24 * 60 * 60 * 1000
 const REFUSALS = {
-  401: "MemBraince didn't accept your API key, so memory is off. Check MEMBRAINCE_API_KEY, or create a new key at https://membraince.com/portal.",
+  401: "MemBraince didn't accept your API key (MEMBRAINCE_API_KEY or ~/.config/membraince/api-key), so memory is off. Check it, or create a new key at https://membraince.com/portal.",
   402: "MemBraince memory is off until you subscribe at https://membraince.com/portal.",
   403: "MemBraince doesn't know the project in MEMBRAINCE_PROJECT for this key. Use a project name from https://membraince.com/portal, or leave it unset.",
-  423: "This API key can't unlock your encrypted MemBraince memories. Create a new key at https://membraince.com/portal and put it in MEMBRAINCE_API_KEY.",
+  423: "This API key can't unlock your encrypted MemBraince memories. Create a new key at https://membraince.com/portal and use it in place of this one.",
   429: "This API key has reached a MemBraince limit, so memory is paused. Usage is on https://membraince.com/portal.",
 }
 
+const savedKey = () => {
+  try {
+    return readFileSync(join(homedir(), ".config", "membraince", "api-key"), "utf8").trim()
+  } catch {
+    return ""
+  }
+}
+
 export const MemBraince = async ({ client, directory }) => {
-  const key = process.env.MEMBRAINCE_API_KEY
+  const key = process.env.MEMBRAINCE_API_KEY || savedKey()
   if (!key) return {}
   const autoRecall = process.env.MEMBRAINCE_AUTO_RECALL !== "false"
   const autoSave = process.env.MEMBRAINCE_AUTO_SAVE !== "false"
@@ -91,6 +106,22 @@ export const MemBraince = async ({ client, directory }) => {
   }
 
   return {
+    config: async (config) => {
+      if (config.mcp?.membraince) return
+      config.mcp = {
+        ...config.mcp,
+        membraince: {
+          type: "remote",
+          url: `${BASE}/v1/mcp`,
+          headers: {
+            "X-API-Key": key,
+            "X-MemBraince-User": headers["X-MemBraince-User"],
+            "X-MemBraince-Project": headers["X-MemBraince-Project"],
+          },
+          oauth: false,
+        },
+      }
+    },
     "chat.message": async (input, output) => {
       if (!autoRecall) return
       const prompt = output.parts

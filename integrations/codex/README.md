@@ -23,7 +23,8 @@ Set up MemBraince memory for Codex on this computer. Run `codex plugin marketpla
 ```
 
 Codex can't sign in or trust hooks for you, so it asks you to; your API key never goes into the chat.
-Codex saves it from your clipboard. Or follow the steps yourself:
+Codex saves it from your clipboard. The [installer](../../README.md#get-started) does the same from a
+terminal, for Codex and your other agents at once. Or follow the steps yourself:
 
 1. Create an account at https://membraince.com/portal and subscribe.
 2. Add this repository as a plugin marketplace:

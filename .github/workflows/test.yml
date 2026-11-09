@@ -23,6 +23,13 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/hooks.ps1
+      - name: Installer (macOS, Linux, WSL)
+        shell: bash
+        run: bash tests/install.sh
+      - name: Installer (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/install.ps1
       - name: Hermes plugin
         shell: bash
         run: python tests/hermes.py

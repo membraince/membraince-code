@@ -2,7 +2,8 @@
 
 Long-term memory for [OpenCode](https://opencode.ai), backed by [MemBraince](https://membraince.com).
 
-- **Memory tools**: `recall`, `remember`, and `forget`, from the MemBraince MCP server.
+- **Memory tools**: `recall`, `remember`, and `forget`, from the MemBraince MCP server, which the plugin
+  adds for you.
 - **Recall automatically**: with each message you send, memories related to it (and, on a session's
   first message, to the project) are added to the system prompt.
 - **Save automatically**: when a session goes idle, the messages you typed since the last save are
@@ -11,12 +12,37 @@ Long-term memory for [OpenCode](https://opencode.ai), backed by [MemBraince](htt
 
 ## Setup
 
-1. Create an account at https://membraince.com/portal, subscribe, and create an API key. Put it in the
-   `MEMBRAINCE_API_KEY` environment variable (Windows PowerShell:
-   `[Environment]::SetEnvironmentVariable("MEMBRAINCE_API_KEY", "<key>", "User")`; macOS and Linux:
-   `export` it in your shell profile).
-2. Add the MCP server to your OpenCode config (`~/.config/opencode/opencode.json`, or
-   `opencode.json` in a project):
+1. Create an account at https://membraince.com/portal, subscribe, and create an API key.
+2. Run the installer and paste the key when it asks.
+
+   macOS, Linux, and WSL:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/membraince/membraince-code/main/install.sh | sh
+   ```
+
+   Windows (PowerShell):
+
+   ```powershell
+   irm https://raw.githubusercontent.com/membraince/membraince-code/main/install.ps1 | iex
+   ```
+
+3. Restart OpenCode.
+
+The installer saves the key in `~/.config/membraince/api-key`, readable by your account only, and puts
+[`membraince.js`](membraince.js) in OpenCode's plugins folder. `opencode.json` stays as it is: the plugin
+adds the memory tools' server when OpenCode starts. Run the installer again to change the key or update
+the plugin. To remove MemBraince, delete `~/.config/opencode/plugins/membraince.js` and the key file.
+
+### By hand
+
+Copy [`membraince.js`](membraince.js) into `~/.config/opencode/plugins/` (or `.opencode/plugins/` in a
+project) and give it a key: the `MEMBRAINCE_API_KEY` environment variable, or the file
+`~/.config/membraince/api-key`. Then restart OpenCode.
+
+To set the memory tools' server up yourself, add a `membraince` entry to your OpenCode config
+(`~/.config/opencode/opencode.json`, or `opencode.json` in a project). The plugin leaves an entry with
+that name alone:
 
    ```json
    {
@@ -36,10 +62,6 @@ Long-term memory for [OpenCode](https://opencode.ai), backed by [MemBraince](htt
    }
    ```
 
-3. For automatic recall and save, copy [`membraince.js`](membraince.js) into
-   `~/.config/opencode/plugins/` (or `.opencode/plugins/` in a project).
-4. Restart OpenCode.
-
 The plugin has no dependencies. Automatic recall uses OpenCode's
 `experimental.chat.system.transform` hook, so a future OpenCode release may change how it works;
 the memory tools keep working either way.
@@ -51,12 +73,12 @@ messages?" If MemBraince can't use your key, OpenCode shows a MemBraince warning
 
 ### Settings
 
-The plugin and the MCP entry above read the same variables, so automatic recall and save use the
-same memories as the tools. An unset variable falls back to the default.
+The plugin reads these for automatic recall and save and for the memory tools, so both use the same
+memories. An unset variable falls back to the default.
 
 | Variable | Meaning | Default |
 | --- | --- | --- |
-| `MEMBRAINCE_API_KEY` | Your API key | none; the plugin does nothing without it |
+| `MEMBRAINCE_API_KEY` | Your API key | the key in `~/.config/membraince/api-key`; the plugin does nothing without a key |
 | `MEMBRAINCE_USER` | Whose memories these are inside your account | `default` |
 | `MEMBRAINCE_PROJECT` | A project name from the portal to save to and recall from | the key's home project |
 | `MEMBRAINCE_AUTO_RECALL` | `false` turns off automatic recall | `true` |
@@ -64,8 +86,8 @@ same memories as the tools. An unset variable falls back to the default.
 
 ## What the plugin sends
 
-The plugin sends to `MEMBRAINCE_URL` (by default `https://membraince.com`) and the MCP entry to the
-URL in it, both with your API key in the `X-API-Key` header. Nothing is sent to any other service. Automatic save sends every message you
+The plugin and the memory tools send to `MEMBRAINCE_URL` (by default `https://membraince.com`), with
+your API key in the `X-API-Key` header. Nothing is sent to any other service. Automatic save sends every message you
 type, including anything sensitive you paste; don't paste secrets, or turn automatic save off.
 
 | When | Request | Contents |

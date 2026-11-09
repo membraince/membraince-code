@@ -34,15 +34,30 @@ What you get in a connected agent:
 
 ## Get started
 
-1. Create an account at https://membraince.com/portal and subscribe.
-2. Pick your tool in the table above and follow its page. Claude Code, for example:
+1. Create an account at https://membraince.com/portal, subscribe, and create an API key.
+2. Run the installer and paste the key when it asks. It adds MemBraince to OpenCode, Hermes, and Codex,
+   whichever are on your computer.
+
+   macOS, Linux, and WSL:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/membraince/membraince-code/main/install.sh | sh
+   ```
+
+   Windows (PowerShell):
+
+   ```powershell
+   irm https://raw.githubusercontent.com/membraince/membraince-code/main/install.ps1 | iex
+   ```
+
+   Claude Code installs from inside Claude Code instead:
 
    ```
    /plugin marketplace add membraince/membraince-code
    /plugin install membraince@membraince
    ```
 
-   then paste an API key from the portal when asked.
+   For any other tool, follow its page in the table above.
 3. Check it works: tell your agent "Remember that I prefer short commit messages", then ask about it in a new
    session.
 
@@ -66,6 +81,7 @@ The memory engine itself runs on membraince.com and isn't part of this repositor
 | --- | --- |
 | `integrations/<tool>/` | One folder per tool, in that tool's native format |
 | `docs/` | The MCP endpoint, authentication, projects, and OAuth |
+| `install.sh`, `install.ps1` | The installer: saves your key and sets up each agent it finds |
 | `scripts/` | Build helpers, such as packaging the Desktop extension |
 | `.claude-plugin/marketplace.json` | Lets Claude Code install the plugin straight from this repository |
 | `.agents/plugins/marketplace.json` | Lets Codex install its plugin straight from this repository |
