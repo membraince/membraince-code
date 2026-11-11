@@ -102,35 +102,30 @@ queue_prompt() {
     mv "${root}/${session}/.${name}.tmp" "${root}/${session}/${name}.json"
 }
 
-# One save per session at a time. The lock folder records its owner's process
-# id; another save steps aside while that process runs. A lock is cleared only
-# when its owner is gone, or after 10 minutes, far past any hook's time limit.
+# One save per session at a time. The lock folder holds one file, named after
+# its owner's process id; another save steps aside while that process runs. A
+# lock changes hands only when its owner is gone, or after 10 minutes, far
+# past any hook's time limit.
 take_lock() {
-  local lock="$1" owner stale
+  local lock="$1" owner
   if mkdir "$lock" 2>/dev/null; then
-    echo "$$" >"${lock}/pid"
-    return 0
+    : >"${lock}/$$"
+    return
   fi
-  owner="$(cat "${lock}/pid" 2>/dev/null)"
-  if { [ -n "$owner" ] && ! kill -0 "$owner" 2>/dev/null; } || [ -n "$(find "$lock" -maxdepth 0 -mmin +10 2>/dev/null)" ]; then
-    # Rename first, so of two saves clearing the same stale lock only one wins,
-    # and check it is still the lock that was judged stale.
-    stale="${lock}.stale.$$"
-    mv "$lock" "$stale" 2>/dev/null || return 1
-    if [ "$(cat "${stale}/pid" 2>/dev/null)" != "$owner" ]; then
-      mv "$stale" "$lock" 2>/dev/null
-      return 1
-    fi
-    rm -rf "$stale"
-    mkdir "$lock" 2>/dev/null || return 1
-    echo "$$" >"${lock}/pid"
-    return 0
+  owner="$(ls "$lock" 2>/dev/null | head -n 1)"
+  if [ -z "$owner" ] || kill -0 "$owner" 2>/dev/null; then
+    [ -n "$(find "$lock" -maxdepth 0 -mmin +10 2>/dev/null)" ] || return 1
   fi
-  return 1
+  # Ten minutes old with no owner's file: its save died. The next save takes it.
+  [ -n "$owner" ] || { rmdir "$lock" 2>/dev/null; return 1; }
+  # Taking a stale lock is one rename of its owner's file: of two saves only
+  # one wins, and it fails if the lock has changed hands since. The folder
+  # stays in place throughout, so no other save can take the lock meanwhile.
+  mv "${lock}/${owner}" "${lock}/$$" 2>/dev/null
 }
 
 release_lock() {
-  [ "$(cat "${1}/pid" 2>/dev/null)" = "$$" ] && rm -rf "$1"
+  rm "${1}/$$" 2>/dev/null && rmdir "$1" 2>/dev/null
 }
 
 flush() { # flush <session folder> <seconds>; succeeds when nothing is left to send

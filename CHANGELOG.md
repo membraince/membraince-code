@@ -69,3 +69,7 @@
   sets up OpenCode, Hermes, and Codex, whichever it finds. The key is checked with MemBraince before it's saved.
 - OpenCode plugin: reads the saved key when `MEMBRAINCE_API_KEY` isn't set, and adds the memory tools' server
   itself, so setup no longer edits `opencode.json` or needs an environment variable.
+- Claude Code plugin 0.9.2 and Codex plugin 0.4.4: a save that finds a lock whose owner is gone now takes it
+  with one rename inside the lock folder. Before, it moved the folder away to check it, and while it was away
+  another save could take the lock and send the same prompts a second time. Codex's PowerShell hook for
+  Windows is unchanged.

@@ -70,12 +70,12 @@ for agent in codex claude-code; do
   # A lock held by a running process is respected; one left by a dead process is cleared.
   prompt s2 "behind a live lock" >/dev/null
   lock="$(find "$data" -maxdepth 1 -type d -name 'membraince-queue-*')/s2.saving"
-  mkdir "$lock" && echo "$$" >"$lock/pid"
+  mkdir "$lock" && : >"$lock/$$"
   save s2
   check "a save steps aside while the lock's owner runs" '[ "$(queued)" = 1 ]'
   sh -c 'exit 0' & dead=$!
   wait "$dead"
-  echo "$dead" >"$lock/pid"
+  mv "$lock/$$" "$lock/$dead"
   save s2
   check "a lock whose owner is gone is cleared" '[ "$(queued)" = 0 ] && uploaded | grep -q "behind a live lock"'
 
