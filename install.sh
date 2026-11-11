@@ -138,7 +138,7 @@ if command -v codex >/dev/null 2>&1; then
   codex plugin marketplace add membraince/membraince-code </dev/null >"$log" 2>&1
   codex plugin marketplace upgrade membraince </dev/null >>"$log" 2>&1
   if codex plugin add membraince@membraince </dev/null >>"$log" 2>&1; then
-    say "Codex: MemBraince added. Open Codex, sign in when it asks to connect MemBraince, then run /hooks and trust the MemBraince hooks."
+    say "Codex: MemBraince added. Open Codex, sign in when it asks to connect MemBraince and choose the same home project as your key's, then run /hooks and trust the MemBraince hooks."
   else
     say "Codex: couldn't add the plugin. Add it from /plugins in Codex: ${REPO}/tree/main/integrations/codex"
   fi

@@ -15,60 +15,66 @@ Long-term memory for [Codex](https://developers.openai.com/codex), backed by
 
 ## Setup
 
-Create an account at https://membraince.com/portal and subscribe, then paste this into Codex. It
-installs MemBraince and walks you through the rest:
+1. Create an account at https://membraince.com/portal, subscribe, and create an API key. The key is shown
+   only once, and so is the recovery code that comes with your first key: store both in a password manager.
+2. Open a terminal and run the installer. Paste the key when it asks; it stays hidden as you paste.
+
+   macOS, Linux, and WSL:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/membraince/membraince-code/main/install.sh | sh
+   ```
+
+   Windows (PowerShell):
+
+   ```powershell
+   irm https://raw.githubusercontent.com/membraince/membraince-code/main/install.ps1 | iex
+   ```
+
+3. Quit Codex if it's open, then open it and sign in when it asks to connect MemBraince. Choose the same
+   home project as your key's, so the hooks and the memory tools use the same memories, and enter the key
+   to unlock them.
+4. Run `/hooks`, review the MemBraince hooks, and trust them. Codex asks again whenever a hook changes.
+
+The installer saves the key in `~/.config/membraince/api-key`, readable by your account only, and installs
+the plugin with Codex's own `codex plugin` commands. Run it again to change the key or update the plugin.
+If it says it couldn't add the plugin, install it from Codex's plugin directory, as described under
+[By hand](#by-hand).
+
+Signing in gives Codex the memory tools and the `memory` skill everywhere Codex runs, including ChatGPT.
+The connection appears in the portal as an API key; revoke it there to disconnect. The saved key is for
+the hooks, which do the automatic recall and save in the Codex app and CLI: they run as separate commands
+on your computer and can't use Codex's sign-in. They need `bash` and `curl` on macOS and Linux, and Windows
+PowerShell on Windows. Hooks don't run in ChatGPT or other cloud sessions; there, Codex uses the memory
+tools when you ask it to.
+
+### From inside Codex
+
+Codex can do the setup for you. Create an account at https://membraince.com/portal and subscribe, then
+paste this into Codex:
 
 ```text
 Set up MemBraince memory for Codex on this computer. Run `codex plugin marketplace add membraince/membraince-code`, `codex plugin marketplace upgrade membraince` and `codex plugin add membraince@membraince` (if the `codex` command isn't found, tell me to install MemBraince from `/plugins` instead). Once I've started a new session and connected MemBraince, use its `setup` skill.
 ```
 
-Codex can't sign in or trust hooks for you, so it asks you to; your API key never goes into the chat.
-Codex saves it from your clipboard. The [installer](../../README.md#get-started) does the same from a
-terminal, for Codex and your other agents at once. Or follow the steps yourself:
+Codex can't sign in or trust hooks for you, so it asks you to. Your API key never goes into the chat:
+Codex saves it from your clipboard.
 
-1. Create an account at https://membraince.com/portal and subscribe.
-2. Add this repository as a plugin marketplace:
+### By hand
+
+1. Add this repository as a plugin marketplace:
 
    ```bash
    codex plugin marketplace add membraince/membraince-code
    ```
 
-3. Install the plugin with `codex plugin add membraince@membraince`, or open the plugin directory
+2. Install the plugin with `codex plugin add membraince@membraince`, or open the plugin directory
    (`/plugins` in the CLI, or **Plugins** in the app), choose the MemBraince marketplace, and install
    **MemBraince**.
-4. When Codex asks you to connect MemBraince, sign in and choose the project this connection saves to.
-   The first time, you get a recovery code: keep it in a password manager, because step 5 needs it. If
-   you've already created API keys, enter one (or your recovery code) to unlock your memories. The
-   connection appears in the portal as an API key; revoke it there to disconnect.
-
-That gives Codex the memory tools and the `memory` skill everywhere Codex runs, including ChatGPT.
-
-For automatic recall and save in the Codex app and CLI, the hooks also need an API key. They run as
-separate commands on your computer and can't use Codex's sign-in:
-
-5. In the portal, create an API key whose home project is the project you chose in step 4, so the hooks
-   and the memory tools use the same memories. The portal asks for your recovery code (or another key).
-6. Save the key in a file in your home folder, where the hooks look for it:
-   - Windows (PowerShell):
-
-     ```powershell
-     New-Item -ItemType Directory -Force "$HOME\.config\membraince" | Out-Null
-     Set-Content -NoNewline -Path "$HOME\.config\membraince\api-key" -Value "<key>"
-     ```
-
-   - macOS and Linux:
-
-     ```bash
-     mkdir -p ~/.config/membraince && (umask 077 && printf '%s' '<key>' > ~/.config/membraince/api-key)
-     ```
-
-   The file works in the Codex app and the CLI. If you set `MEMBRAINCE_API_KEY` instead, the hooks use
-   that.
-7. Quit and reopen Codex, run `/hooks`, review the MemBraince hooks, and trust them. Codex asks again
-   whenever a hook changes.
-
-The hooks need `bash` and `curl` on macOS and Linux, and Windows PowerShell on Windows. Hooks don't
-run in ChatGPT or other cloud sessions; there, Codex uses the memory tools when you ask it to.
+3. Give the hooks your API key: a file `~/.config/membraince/api-key` that holds only the key and is
+   readable by your account only, or the `MEMBRAINCE_API_KEY` environment variable. The file works in the
+   Codex app and the CLI.
+4. Continue from step 3 of [Setup](#setup).
 
 ### Check it works
 

@@ -12,7 +12,8 @@ Long-term memory for [OpenCode](https://opencode.ai), backed by [MemBraince](htt
 
 ## Setup
 
-1. Create an account at https://membraince.com/portal, subscribe, and create an API key.
+1. Create an account at https://membraince.com/portal, subscribe, and create an API key. The key is shown
+   only once, and so is the recovery code that comes with your first key: store both in a password manager.
 2. Run the installer and paste the key when it asks.
 
    macOS, Linux, and WSL:

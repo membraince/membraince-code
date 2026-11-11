@@ -161,7 +161,7 @@
         [void](Invoke-Quiet codex @("plugin", "marketplace", "add", "membraince/membraince-code"))
         [void](Invoke-Quiet codex @("plugin", "marketplace", "upgrade", "membraince"))
         if (Invoke-Quiet codex @("plugin", "add", "membraince@membraince")) {
-            Write-Host "Codex: MemBraince added. Open Codex, sign in when it asks to connect MemBraince, then run /hooks and trust the MemBraince hooks."
+            Write-Host "Codex: MemBraince added. Open Codex, sign in when it asks to connect MemBraince and choose the same home project as your key's, then run /hooks and trust the MemBraince hooks."
         } else {
             Write-Host "Codex: couldn't add the plugin. Add it from /plugins in Codex: $repo/tree/main/integrations/codex"
         }
