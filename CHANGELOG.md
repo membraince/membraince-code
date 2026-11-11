@@ -72,4 +72,4 @@
 - Claude Code plugin 0.9.2 and Codex plugin 0.4.4: a save that finds a lock whose owner is gone now takes it
   with one rename inside the lock folder. Before, it moved the folder away to check it, and while it was away
   another save could take the lock and send the same prompts a second time. Codex's PowerShell hook for
-  Windows is unchanged.
+  Windows takes a stale lock in place too.

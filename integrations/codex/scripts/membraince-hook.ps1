@@ -139,16 +139,21 @@ function Acquire-Lock([string]$Lock) {
     $gone = $owner -and -not (Get-Process -Id ([int]$owner) -ErrorAction SilentlyContinue)
     $old = (Get-Item -LiteralPath $Lock -ErrorAction SilentlyContinue).LastWriteTime -lt (Get-Date).AddMinutes(-10)
     if (-not ($gone -or $old)) { return $false }
-    # Rename first, so of two saves clearing the same stale lock only one wins,
-    # and check it is still the lock that was judged stale.
-    $stale = "$Lock.stale.$PID"
-    try { Move-Item -LiteralPath $Lock -Destination $stale } catch { return $false }
-    if ((Lock-Owner $stale) -ne $owner) {
-        try { Move-Item -LiteralPath $stale -Destination $Lock } catch {}
-        return $false
+    # A stale lock is taken with the file held open by this process alone: of
+    # two saves only one can open it, and it is left as it is if the lock has
+    # changed hands since. The file stays in place throughout, so no other
+    # save can take the lock meanwhile.
+    try { $stream = [IO.File]::Open($Lock, "Open", "ReadWrite", "None") } catch { return $false }
+    try {
+        $bytes = New-Object byte[] 64
+        if ($utf8.GetString($bytes, 0, $stream.Read($bytes, 0, 64)).Trim() -ne $owner) { return $false }
+        $bytes = $utf8.GetBytes("$PID")
+        $stream.SetLength(0)
+        $stream.Write($bytes, 0, $bytes.Length)
+        return $true
+    } finally {
+        $stream.Close()
     }
-    Remove-Item -LiteralPath $stale -Force
-    return (Try-Lock $Lock)
 }
 
 function Release-Lock([string]$Lock) {
