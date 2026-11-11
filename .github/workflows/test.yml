@@ -31,7 +31,7 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/install.ps1
       - name: Installer (Windows, PowerShell 7)
-        if: runner.os == 'Windows'
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
         shell: pwsh
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File tests/install.ps1
       - name: Hermes plugin

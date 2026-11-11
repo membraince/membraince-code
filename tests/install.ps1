@@ -50,10 +50,16 @@ function Setup([string]$UserHome, [string]$Key, [string]$Url = "http://127.0.0.1
         foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name]) }
     }
 }
-# True when the file's only permission is the current account's.
+# True when the file's only permission is the current account's. Says what it found otherwise.
 function OnlyMine([string]$Path) {
-    $rules = @((Get-Acl $Path).Access)
-    return $rules.Count -eq 1 -and $rules[0].IdentityReference.Translate([Security.Principal.SecurityIdentifier]) -eq [Security.Principal.WindowsIdentity]::GetCurrent().User
+    $acl = Get-Acl $Path
+    $rules = @($acl.Access)
+    $me = [Security.Principal.WindowsIdentity]::GetCurrent().User
+    if ($rules.Count -eq 1 -and $rules[0].IdentityReference.Translate([Security.Principal.SecurityIdentifier]) -eq $me) { return $true }
+    $ErrorActionPreference = "Continue"
+    Write-Host "       me $me; owner $($acl.Owner); rules: $(($rules | ForEach-Object { "$($_.IdentityReference) $($_.FileSystemRights) inherited=$($_.IsInherited)" }) -join '; ')"
+    Write-Host "       icacls is $((Get-Command icacls.exe).Source); trying it again says: $((& icacls.exe $Path /inheritance:r /grant:r "*$($me.Value):F" 2>&1 | Out-String).Trim())"
+    return $false
 }
 function Calls([string]$Text) {
     if (-not (Test-Path "$work\calls.txt")) { return 0 }
