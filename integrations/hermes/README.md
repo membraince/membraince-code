@@ -23,15 +23,31 @@ Hermes's own `MEMORY.md` and `USER.md` keep working.
 ## Setup
 
 1. Create an account at https://membraince.com/portal, subscribe, and create an API key.
-2. Install the plugin:
+2. Run the installer and paste the key when it asks. It puts the key in Hermes's `.env` file, installs the
+   plugin, and makes MemBraince your memory provider.
+
+   macOS, Linux, and WSL:
 
    ```bash
-   hermes plugins install membraince/membraince-code/integrations/hermes
+   curl -fsSL https://raw.githubusercontent.com/membraince/membraince-code/main/install.sh | sh
    ```
 
-   Paste your key when asked (it stays hidden, and Hermes keeps it in its `.env` file), then answer `y` to
-   use MemBraince as your memory provider.
+   Windows (PowerShell):
+
+   ```powershell
+   irm https://raw.githubusercontent.com/membraince/membraince-code/main/install.ps1 | iex
+   ```
+
 3. Start a new session.
+
+Or install it with Hermes alone:
+
+```bash
+hermes plugins install membraince/membraince-code/integrations/hermes
+```
+
+Paste your key when asked (it stays hidden, and Hermes keeps it in its `.env` file), then answer `y` to
+use MemBraince as your memory provider.
 
 On older Hermes versions the last answer only enables the plugin. If `hermes memory status` doesn't show
 `membraince` as the provider, run `hermes memory setup`, choose it, and press Enter to keep your key.
