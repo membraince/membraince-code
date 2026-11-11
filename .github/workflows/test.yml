@@ -30,6 +30,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/install.ps1
+      - name: Installer (Windows, PowerShell 7)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File tests/install.ps1
       - name: Hermes plugin
         shell: bash
         run: python tests/hermes.py

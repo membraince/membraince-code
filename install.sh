@@ -21,9 +21,9 @@ SOURCE="${MEMBRAINCE_SOURCE:-https://raw.githubusercontent.com/membraince/membra
 PORTAL="https://membraince.com/portal"
 REPO="https://github.com/membraince/membraince-code"
 key_file="${HOME}/.config/membraince/api-key"
-log="${TMPDIR:-/tmp}/membraince-setup-$$.log"
 found=0
 umask 077
+log="$(mktemp 2>/dev/null)" || log="${TMPDIR:-/tmp}/membraince-setup-$$.log"
 
 say() { printf '%s\n' "$*"; }
 stop() {
@@ -31,6 +31,9 @@ stop() {
   exit 1
 }
 trap '{ stty echo </dev/tty; } 2>/dev/null; rm -f "$log"' EXIT
+# Some shells skip the line above when Ctrl-C stops them, which would leave
+# the terminal hiding what you type.
+trap 'exit 130' INT TERM HUP
 
 command -v curl >/dev/null 2>&1 || stop "MemBraince setup needs curl. Install it and run this again."
 

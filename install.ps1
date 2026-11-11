@@ -40,9 +40,14 @@
     }
 
     # Runs one of an agent's own commands with an empty standard input, so it
-    # never waits for an answer. True when the command succeeded.
+    # never waits for an answer. True when the command succeeded. It runs the
+    # program itself, not a .ps1 wrapper beside it: npm installs both, and many
+    # computers don't allow scripts to run.
     function Invoke-Quiet([string]$Command, [string[]]$Arguments) {
-        $null | & $Command @Arguments *> $null
+        $program = Get-Command $Command -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $program) { return $false }
+        $global:LASTEXITCODE = 1
+        $null | & $program.Source @Arguments *> $null
         return $LASTEXITCODE -eq 0
     }
 
@@ -90,14 +95,11 @@
     }
 
     # The key file is limited to this account: inherited permissions are
-    # replaced by full control for the current user only.
+    # removed, leaving full control for the current user only.
     [void](New-Item -ItemType Directory -Force -Path $keyFolder)
     [IO.File]::WriteAllText($keyFile, $key, $noBom)
-    $acl = New-Object Security.AccessControl.FileSecurity
-    $acl.SetAccessRuleProtection($true, $false)
-    $me = [Security.Principal.WindowsIdentity]::GetCurrent().User
-    $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($me, "FullControl", "Allow")))
-    [IO.File]::SetAccessControl($keyFile, $acl)
+    $me = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    & icacls.exe $keyFile /inheritance:r /grant:r "*${me}:F" *> $null
     Write-Host "Key saved in ~\.config\membraince\api-key."
 
     # OpenCode loads every file in its plugins folder; the plugin reads the saved
@@ -124,13 +126,14 @@
     if (Get-Command hermes -ErrorAction SilentlyContinue) {
         $found = $true
         $done = $false
-        $envFile = "$($null | & hermes config env-path 2>$null | Select-Object -Last 1)".Trim()
+        $hermes = (Get-Command hermes -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1).Source
+        $envFile = if ($hermes) { "$($null | & $hermes config env-path 2>$null | Select-Object -Last 1)".Trim() }
         if ($envFile) {
             try {
                 [void](New-Item -ItemType Directory -Force -Path (Split-Path $envFile))
                 $lines = @()
                 if (Test-Path -LiteralPath $envFile) {
-                    $lines = @(Get-Content -LiteralPath $envFile | Where-Object { $_ -notmatch '^MEMBRAINCE_API_KEY=' })
+                    $lines = @([IO.File]::ReadAllLines($envFile) | Where-Object { $_ -notmatch '^MEMBRAINCE_API_KEY=' })
                 }
                 [IO.File]::WriteAllLines($envFile, [string[]]($lines + "MEMBRAINCE_API_KEY=$key"), $noBom)
                 $done = (Invoke-Quiet hermes @("plugins", "install", "membraince/membraince-code/integrations/hermes", "--force", "--enable")) -and

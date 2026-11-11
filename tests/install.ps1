@@ -1,6 +1,7 @@
 # Tests for install.ps1 against tests/fake_server.py, with a throwaway home folder and
 # stand-ins for the `hermes` and `codex` commands that record how they were called.
 # Run from the repository root: powershell -ExecutionPolicy Bypass -File tests/install.ps1
+# (or pwsh in place of powershell: the installer runs in whichever one runs this).
 $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $PSScriptRoot
 $work = Join-Path ([IO.Path]::GetTempPath()) ("membraince-test-" + [Guid]::NewGuid())
@@ -11,6 +12,7 @@ $server = Start-Process -FilePath $python -ArgumentList @("`"$repo\tests\fake_se
 for ($i = 0; $i -lt 100 -and -not (Test-Path "$work\port"); $i++) { Start-Sleep -Milliseconds 100 }
 $port = (Get-Content "$work\port").Trim()
 $failures = 0
+$shell = (Get-Process -Id $PID).Path
 
 function Check([string]$Description, [scriptblock]$Condition) {
     if (& $Condition) { "  ok   $Description" } else { "  FAIL $Description"; $script:failures++ }
@@ -26,6 +28,9 @@ if "%1 %2"=="config env-path" echo %FAKE_HERMES_ENV%
 exit /b 0
 "@
 }
+# npm puts a .ps1 wrapper beside each program. Many computers don't allow it to run, so the
+# installer must go past it to the program.
+Set-Content -Encoding ascii -Path "$bin\codex.ps1" -Value "Add-Content -Path '$work\calls.txt' -Value 'codex-wrapper'; exit 1"
 
 # Runs the installer with no terminal, as another process, and returns what it says.
 function Setup([string]$UserHome, [string]$Key, [string]$Url = "http://127.0.0.1:$port") {
@@ -40,10 +45,15 @@ function Setup([string]$UserHome, [string]$Key, [string]$Url = "http://127.0.0.1
         [Environment]::SetEnvironmentVariable($name, $settings[$name])
     }
     try {
-        return ($null | powershell -NoProfile -ExecutionPolicy Bypass -File "$repo\install.ps1" | Out-String)
+        return ($null | & $shell -NoProfile -ExecutionPolicy Bypass -File "$repo\install.ps1" | Out-String)
     } finally {
         foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name]) }
     }
+}
+# True when the file's only permission is the current account's.
+function OnlyMine([string]$Path) {
+    $rules = @((Get-Acl $Path).Access)
+    return $rules.Count -eq 1 -and $rules[0].IdentityReference.Translate([Security.Principal.SecurityIdentifier]) -eq [Security.Principal.WindowsIdentity]::GetCurrent().User
 }
 function Calls([string]$Text) {
     if (-not (Test-Path "$work\calls.txt")) { return 0 }
@@ -54,23 +64,23 @@ try {
     "== install.ps1"
     $userHome = Join-Path $work "home"
     [void](New-Item -ItemType Directory -Force -Path "$userHome\.config\opencode", "$userHome\.hermes")
-    [IO.File]::WriteAllText("$userHome\.hermes\.env", "OTHER=1`nMEMBRAINCE_API_KEY=old`n")
+    $accented = "NAME=caf" + [char]0xE9
+    [IO.File]::WriteAllText("$userHome\.hermes\.env", "OTHER=1`n$accented`nMEMBRAINCE_API_KEY=old`n")
     $said = Setup $userHome "key-a"
     Check "the key is checked with MemBraince before it's saved" { @(Get-Content "$work\routes.txt" | Where-Object { $_ -match "session-start" }).Count -eq 1 }
     Check "the key is saved in ~\.config\membraince\api-key, with no byte-order mark" { [IO.File]::ReadAllBytes("$userHome\.config\membraince\api-key").Length -eq 5 -and (Get-Content -Raw "$userHome\.config\membraince\api-key") -eq "key-a" }
-    Check "the key file is limited to this account" {
-        $rules = @((Get-Acl "$userHome\.config\membraince\api-key").Access)
-        $rules.Count -eq 1 -and $rules[0].IdentityReference.Translate([Security.Principal.SecurityIdentifier]) -eq [Security.Principal.WindowsIdentity]::GetCurrent().User
-    }
+    Check "the key file is limited to this account" { OnlyMine "$userHome\.config\membraince\api-key" }
     Check "OpenCode gets the plugin file in its plugins folder" { (Get-FileHash "$userHome\.config\opencode\plugins\membraince.js").Hash -eq (Get-FileHash "$repo\integrations\opencode\membraince.js").Hash }
-    Check "Hermes's .env gets the key once and keeps its other lines" { ((Get-Content "$userHome\.hermes\.env") -join "|") -eq "OTHER=1|MEMBRAINCE_API_KEY=key-a" }
+    Check "Hermes's .env gets the key once and keeps its other lines, accents included" { ([IO.File]::ReadAllLines("$userHome\.hermes\.env") -join "|") -eq "OTHER=1|$accented|MEMBRAINCE_API_KEY=key-a" }
     Check "Hermes installs the plugin without questions and makes it the memory provider" { (Calls "hermes plugins install membraince/membraince-code/integrations/hermes --force --enable") -eq 1 -and (Calls "hermes config set memory.provider membraince") -eq 1 }
     Check "Codex adds the marketplace and the plugin" { (Calls "codex plugin marketplace add membraince/membraince-code") -eq 1 -and (Calls "codex plugin add membraince@membraince") -eq 1 }
+    Check "Codex's .ps1 wrapper is never run" { (Calls "codex-wrapper") -eq 0 }
     Check "each agent found gets its own line" { $said -match "(?s)OpenCode: MemBraince added\..*Hermes: MemBraince is now your memory provider\..*Codex: MemBraince added\." }
     Check "the key itself is never printed" { $said -notmatch "key-a" }
 
     $said = Setup $userHome ""
     Check "run again with no key given, it uses the saved one" { $said -match "Using the key already saved" -and (Get-Content -Raw "$userHome\.config\membraince\api-key") -eq "key-a" }
+    Check "the key file is still limited to this account after it is written again" { OnlyMine "$userHome\.config\membraince\api-key" }
 
     $fresh = Join-Path $work "fresh"
     [void](New-Item -ItemType Directory -Force -Path "$fresh\.config\opencode")
