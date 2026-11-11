@@ -16,7 +16,8 @@ Long-term memory for Claude Code, backed by [MemBraince](https://membraince.com)
 
 ## Setup
 
-1. Create an account at https://membraince.com/portal, subscribe, and create an API key.
+1. Create an account at https://membraince.com/portal, subscribe, and create an API key. The key is shown
+   only once, and so is the recovery code that comes with your first key: store both in a password manager.
 2. In Claude Code, add this repository as a marketplace and install the plugin:
 
    ```

@@ -18,25 +18,42 @@ What you get in a connected agent:
 - **Your key, your data**: memories are encrypted with a key only your API keys and recovery code
   can unlock.
 
-## Supported tools
-
-| Tool | Status | What it adds |
-| --- | --- | --- |
-| [Claude Code](integrations/claude-code) | Available | Plugin: memory tools, automatic recall, automatic save, `memory` skill |
-| [Claude Desktop](integrations/claude-desktop) | Available | Extension: memory tools |
-| claude.ai and the Claude apps | Available | Custom connector with OAuth sign-in ([setup](docs/mcp.md#claudeai-and-the-claude-apps)) |
-| Any MCP client | Available | Memory tools over Streamable HTTP ([setup](docs/mcp.md#any-mcp-client)) |
-| [OpenAI Codex](integrations/codex) | Testing | Plugin: memory tools, automatic recall, automatic save, `memory` skill |
-| [OpenCode](integrations/opencode) | Testing | Plugin file and MCP server: memory tools, automatic recall, automatic save |
-| [Hermes Agent](integrations/hermes) | Testing | Plugin: memory tools, automatic recall, automatic save, Learn the repository, `memory` skill |
-| Cursor, Gemini CLI, Qwen Code, GitHub Copilot, Windsurf, Cline, Kiro, Factory Droid | In progress | Native integrations with automatic recall and save |
-| ChatGPT, Zed, Continue, Roo Code, Goose, Amp, Augment, JetBrains, Trae, Warp, Visual Studio | In progress | Memory tools plus instructions for when to use them |
-
 ## Get started
 
-1. Create an account at https://membraince.com/portal, subscribe, and create an API key.
-2. Run the installer and paste the key when it asks. It adds MemBraince to OpenCode, Hermes, and Codex,
-   whichever are on your computer.
+Create an account at https://membraince.com/portal and subscribe, then follow the steps for your tool.
+
+### Claude Code
+
+1. In the portal, create an API key. The key is shown only once, and so is the recovery code that comes
+   with your first key: store both in a password manager.
+2. In Claude Code, run:
+
+   ```
+   /plugin marketplace add membraince/membraince-code
+   /plugin install membraince@membraince
+   ```
+
+3. Paste the key when Claude Code asks for it.
+
+### Claude Desktop and claude.ai
+
+These sign in to MemBraince, so no API key is needed.
+
+1. In Claude's settings, open Connectors and add a custom connector with the URL
+   `https://membraince.com/v1/mcp`. Leave the OAuth fields empty.
+2. Click Connect, sign in with your MemBraince account, and choose the project the connection saves to.
+3. The first time, MemBraince shows a recovery code once: store it in a password manager. If the account
+   already has API keys, enter one of them (or your recovery code) to unlock your memories instead.
+
+The connector then works in the Claude mobile apps too. Claude Desktop can also use an
+[extension](integrations/claude-desktop#or-install-the-extension) with an API key.
+
+### OpenCode, Hermes, and Codex
+
+1. In the portal, create an API key. The key is shown only once, and so is the recovery code that comes
+   with your first key: store both in a password manager.
+2. Open a terminal and run the installer. Paste the key when it asks; it stays hidden as you paste. The
+   installer sets up each of the three agents it finds on your computer.
 
    macOS, Linux, and WSL:
 
@@ -50,16 +67,36 @@ What you get in a connected agent:
    irm https://raw.githubusercontent.com/membraince/membraince-code/main/install.ps1 | iex
    ```
 
-   Claude Code installs from inside Claude Code instead:
+3. Finish in your agent:
+   - **OpenCode**: restart it.
+   - **Hermes**: start a new session.
+   - **Codex**: open Codex and sign in when it asks to connect MemBraince. Choose the same home project
+     as your key's, and enter the key to unlock your memories. Then run `/hooks` and trust the
+     MemBraince hooks.
 
-   ```
-   /plugin marketplace add membraince/membraince-code
-   /plugin install membraince@membraince
-   ```
+### Check it works
 
-   For any other tool, follow its page in the table above.
-3. Check it works: tell your agent "Remember that I prefer short commit messages", then ask about it in a new
-   session.
+Tell your agent "Remember that I prefer short commit messages." Start a new session and ask "How do I like
+my commit messages?" The answer comes from MemBraince. If something needs fixing, such as a key MemBraince
+doesn't accept or a missing subscription, your agent shows a MemBraince warning that says what.
+
+For any other tool, see [Any MCP client](docs/mcp.md#any-mcp-client). Each tool's page, linked below, lists
+its settings and exactly what it sends.
+
+## Supported tools
+
+| Tool | Status | What it adds |
+| --- | --- | --- |
+| [Claude Code](integrations/claude-code) | Available | Plugin: memory tools, automatic recall, automatic save, `memory` skill |
+| [Claude Desktop](integrations/claude-desktop) | Available | Connector or extension: memory tools |
+| claude.ai and the Claude apps | Available | Custom connector with OAuth sign-in ([setup](docs/mcp.md#claudeai-and-the-claude-apps)) |
+| Any MCP client | Available | Memory tools over Streamable HTTP ([setup](docs/mcp.md#any-mcp-client)) |
+| [OpenAI Codex](integrations/codex) | Testing | Plugin: memory tools, automatic recall, automatic save, `memory` skill |
+| [OpenCode](integrations/opencode) | Testing | Plugin file and MCP server: memory tools, automatic recall, automatic save |
+| [Hermes Agent](integrations/hermes) | Testing | Plugin: memory tools, automatic recall, automatic save, Learn the repository, `memory` skill |
+
+In progress: Cursor, Gemini CLI, Qwen Code, GitHub Copilot, Windsurf, Cline, Kiro, Factory Droid, ChatGPT,
+Zed, Continue, Roo Code, Goose, Amp, Augment, JetBrains, Trae, Warp, and Visual Studio.
 
 ## How it works
 

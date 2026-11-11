@@ -11,8 +11,9 @@ The simplest way is the MemBraince connector. It needs no download and no API ke
 1. Create an account at https://membraince.com/portal and subscribe.
 2. In Claude Desktop, add a custom connector (under Connectors in Claude's settings) with the URL
    `https://membraince.com/v1/mcp`, and leave the OAuth fields empty.
-3. Click Connect, sign in with your MemBraince account, and choose the project the connection saves to. If you've
-   already created API keys, enter one (or your recovery code) once to unlock your memories.
+3. Click Connect, sign in with your MemBraince account, and choose the project the connection saves to.
+4. The first time, MemBraince shows a recovery code once: store it in a password manager. If the account
+   already has API keys, enter one of them (or your recovery code) to unlock your memories instead.
 
 The connector also works in claude.ai and the Claude mobile apps. Free Claude plans allow one custom connector. On
 Team and Enterprise plans, an owner adds it for the organization.
@@ -21,7 +22,8 @@ Team and Enterprise plans, an owner adds it for the organization.
 
 The extension runs on your computer and uses an API key instead of signing in.
 
-1. Create an API key at https://membraince.com/portal.
+1. Create an API key at https://membraince.com/portal. The key is shown only once, and so is the recovery
+   code that comes with your first key: store both in a password manager.
 2. Download
    [membraince-desktop-0.3.3.mcpb](https://github.com/membraince/membraince-code/releases/download/claude-desktop-v0.3.3/membraince-desktop-0.3.3.mcpb).
 3. Open the file in Claude Desktop and paste the key when asked.
