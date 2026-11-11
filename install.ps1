@@ -94,12 +94,17 @@
         Write-Host "Couldn't reach MemBraince to check the key, so it's saved unchecked."
     }
 
-    # The key file is limited to this account: inherited permissions are
-    # removed, leaving full control for the current user only.
+    # The key file is limited to this account: every permission it has,
+    # inherited or its own, is replaced by full control for the current user.
     [void](New-Item -ItemType Directory -Force -Path $keyFolder)
     [IO.File]::WriteAllText($keyFile, $key, $noBom)
-    $me = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-    & icacls.exe $keyFile /inheritance:r /grant:r "*${me}:F" *> $null
+    $acl = New-Object Security.AccessControl.FileSecurity
+    $acl.SetAccessRuleProtection($true, $false)
+    $me = [Security.Principal.WindowsIdentity]::GetCurrent().User
+    $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($me, "FullControl", "Allow")))
+    $info = New-Object IO.FileInfo $keyFile
+    # PowerShell 7 keeps this call in a different place from Windows PowerShell.
+    if ($PSVersionTable.PSVersion.Major -ge 6) { [IO.FileSystemAclExtensions]::SetAccessControl($info, $acl) } else { $info.SetAccessControl($acl) }
     Write-Host "Key saved in ~\.config\membraince\api-key."
 
     # OpenCode loads every file in its plugins folder; the plugin reads the saved

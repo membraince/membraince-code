@@ -38,7 +38,7 @@ function Setup([string]$UserHome, [string]$Key, [string]$Url = "http://127.0.0.1
     $settings = @{
         USERPROFILE = $UserHome; HOMEDRIVE = $UserHome.Substring(0, 2); HOMEPATH = $UserHome.Substring(2)
         XDG_CONFIG_HOME = ""; PATH = "$bin;$env:PATH"; FAKE_HERMES_ENV = "$UserHome\.hermes\.env"
-        MEMBRAINCE_API_KEY = $Key; MEMBRAINCE_URL = $Url; MEMBRAINCE_SOURCE = ([Uri]$repo).AbsoluteUri
+        MEMBRAINCE_API_KEY = $Key; MEMBRAINCE_URL = $Url; MEMBRAINCE_SOURCE = "http://127.0.0.1:$port"
     }
     foreach ($name in $settings.Keys) {
         $saved[$name] = [Environment]::GetEnvironmentVariable($name)
@@ -56,9 +56,7 @@ function OnlyMine([string]$Path) {
     $rules = @($acl.Access)
     $me = [Security.Principal.WindowsIdentity]::GetCurrent().User
     if ($rules.Count -eq 1 -and $rules[0].IdentityReference.Translate([Security.Principal.SecurityIdentifier]) -eq $me) { return $true }
-    $ErrorActionPreference = "Continue"
     Write-Host "       me $me; owner $($acl.Owner); rules: $(($rules | ForEach-Object { "$($_.IdentityReference) $($_.FileSystemRights) inherited=$($_.IsInherited)" }) -join '; ')"
-    Write-Host "       icacls is $((Get-Command icacls.exe).Source); trying it again says: $((& icacls.exe $Path /inheritance:r /grant:r "*$($me.Value):F" 2>&1 | Out-String).Trim())"
     return $false
 }
 function Calls([string]$Text) {
@@ -84,9 +82,11 @@ try {
     Check "each agent found gets its own line" { $said -match "(?s)OpenCode: MemBraince added\..*Hermes: MemBraince is now your memory provider\..*Codex: MemBraince added\." }
     Check "the key itself is never printed" { $said -notmatch "key-a" }
 
+    # Some computers give a new file permissions of its own for other accounts, not inherited ones.
+    & icacls.exe "$userHome\.config\membraince\api-key" /grant "*S-1-5-18:R" > $null
     $said = Setup $userHome ""
     Check "run again with no key given, it uses the saved one" { $said -match "Using the key already saved" -and (Get-Content -Raw "$userHome\.config\membraince\api-key") -eq "key-a" }
-    Check "the key file is still limited to this account after it is written again" { OnlyMine "$userHome\.config\membraince\api-key" }
+    Check "the key file is limited to this account again, whatever other permissions it had" { OnlyMine "$userHome\.config\membraince\api-key" }
 
     $fresh = Join-Path $work "fresh"
     [void](New-Item -ItemType Directory -Force -Path "$fresh\.config\opencode")

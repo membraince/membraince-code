@@ -19,7 +19,8 @@ to <folder>/requests.jsonl with its headers and body.
 Recall routes answer with a fixed line so tests can see recall output; while
 <folder>/recall-slow exists they take 2 seconds, and while <folder>/recall-empty
 exists they answer nothing. /v1/mcp answers a tool call as MCP does, with an
-error result while <folder>/tool-error exists.
+error result while <folder>/tool-error exists. A GET answers with that file of
+this repository, so an installer test can download the plugin from here.
 """
 
 import json
@@ -30,9 +31,18 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 folder = sys.argv[1]
+repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        path = os.path.normpath(os.path.join(repo, self.path.lstrip("/")))
+        if not path.startswith(repo + os.sep) or not os.path.isfile(path):
+            self.reply(404, b"")
+            return
+        with open(path, "rb") as handle:
+            self.reply(200, handle.read())
+
     def do_POST(self):
         body = self.rfile.read(int(self.headers.get("Content-Length") or 0)).decode("utf-8")
         with open(os.path.join(folder, "routes.txt"), "a", encoding="utf-8", newline="\n") as log:
