@@ -1,8 +1,7 @@
 # MemBraince for Claude Desktop
 
-A Claude Desktop extension that gives Desktop chats three memory tools: `recall`, `remember`,
-and `forget`. It's a small Node bridge (`server/index.js`, no dependencies) that forwards
-Desktop's local MCP messages to `https://membraince.com/v1/mcp`.
+Long-term memory for Claude Desktop, backed by [MemBraince](https://membraince.com). Desktop chats get
+three memory tools: `recall`, `remember`, and `forget`.
 
 ## Install
 
@@ -20,13 +19,16 @@ Team and Enterprise plans, an owner adds it for the organization.
 
 ### Or install the extension
 
-The extension runs on your computer and uses an API key instead of signing in.
+The extension runs on your computer and uses an API key instead of signing in. It's a small Node bridge
+(`server/index.js`, no dependencies) that forwards Desktop's local MCP messages to
+`https://membraince.com/v1/mcp`.
 
 1. Create an API key at https://membraince.com/portal. The key is shown only once, and so is the recovery
    code that comes with your first key: store both in a password manager.
 2. Download
    [membraince-desktop-0.3.3.mcpb](https://github.com/membraince/membraince-code/releases/download/claude-desktop-v0.3.3/membraince-desktop-0.3.3.mcpb).
-3. Open the file in Claude Desktop and paste the key when asked.
+3. In Claude Desktop's settings, open Extensions, then Advanced settings, click Install Extension, and
+   choose the file you downloaded. Paste the key when asked.
 
 Settings: API key, memory owner (use the same value as in Claude Code to share memories),
 project, and server URL.

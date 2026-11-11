@@ -25,7 +25,8 @@ Long-term memory for Claude Code, backed by [MemBraince](https://membraince.com)
    /plugin install membraince@membraince
    ```
 
-3. Paste the key when asked. It is kept in your system's credential store.
+3. Paste the key when asked. It is kept in your system's credential store. If Claude Code doesn't ask,
+   run `/plugin configure membraince@membraince`.
 
 Settings (`/plugin`, then MemBraince): API key, memory owner, project, server URL, the two
 automatic behaviours, and Learn the repository. The hooks need `bash` and `curl`, which Claude Code already requires.

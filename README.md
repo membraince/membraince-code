@@ -33,7 +33,8 @@ Create an account at https://membraince.com/portal and subscribe, then follow th
    /plugin install membraince@membraince
    ```
 
-3. Paste the key when Claude Code asks for it.
+3. Paste the key when Claude Code asks for it. If it doesn't ask, run
+   `/plugin configure membraince@membraince`.
 
 ### Claude Desktop and claude.ai
 
@@ -70,9 +71,9 @@ The connector then works in the Claude mobile apps too. Claude Desktop can also 
 3. Finish in your agent:
    - **OpenCode**: restart it.
    - **Hermes**: start a new session.
-   - **Codex**: open Codex and sign in when it asks to connect MemBraince. Choose the same home project
-     as your key's, and enter the key to unlock your memories. Then run `/hooks` and trust the
-     MemBraince hooks.
+   - **Codex**: open Codex and sign in when it asks to connect MemBraince (if it doesn't ask, connect
+     it from `/plugins`). Choose the same home project as your key's, and enter the key to unlock your
+     memories. Then run `/hooks` and trust the MemBraince hooks.
 
 ### Check it works
 

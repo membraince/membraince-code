@@ -35,7 +35,8 @@ share its memories.
 
 ## Any MCP client
 
-Add a Streamable HTTP server with the URL `https://membraince.com/v1/mcp`. If the client supports
+Create an account at https://membraince.com/portal and subscribe. Then add a Streamable HTTP server
+with the URL `https://membraince.com/v1/mcp`. If the client supports
 MCP sign-in, that's all: it asks you to sign in the first time. In Claude Code without the plugin,
 for example:
 
@@ -63,11 +64,14 @@ Keep the key out of files you commit. Most clients can read it from an environme
 
 ## claude.ai and the Claude apps
 
-Add a custom connector (Settings, Connectors) with the URL `https://membraince.com/v1/mcp` and
-leave the OAuth fields empty. Claude registers itself, you sign in with your MemBraince account,
-choose the project the connection saves to and, if your memories are encrypted, enter an API key
-or your recovery code once to unlock them. The connection appears in the portal as an API key;
-revoke it there to disconnect.
+1. Create an account at https://membraince.com/portal and subscribe.
+2. In Claude's settings, open Connectors and add a custom connector with the URL
+   `https://membraince.com/v1/mcp`. Leave the OAuth fields empty.
+3. Click Connect, sign in with your MemBraince account, and choose the project the connection saves to.
+4. The first time, MemBraince shows a recovery code once: store it in a password manager. If the account
+   already has API keys, enter one of them (or your recovery code) to unlock your memories instead.
+
+The connection appears in the portal as an API key; revoke it there to disconnect.
 
 The endpoint implements the MCP authorization spec: protected-resource metadata
 (`/.well-known/oauth-protected-resource`), authorization-server metadata

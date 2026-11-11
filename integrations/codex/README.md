@@ -31,9 +31,9 @@ Long-term memory for [Codex](https://developers.openai.com/codex), backed by
    irm https://raw.githubusercontent.com/membraince/membraince-code/main/install.ps1 | iex
    ```
 
-3. Quit Codex if it's open, then open it and sign in when it asks to connect MemBraince. Choose the same
-   home project as your key's, so the hooks and the memory tools use the same memories, and enter the key
-   to unlock them.
+3. Quit Codex if it's open, then open it and sign in when it asks to connect MemBraince (if it doesn't
+   ask, connect it from `/plugins`). Choose the same home project as your key's, so the hooks and the
+   memory tools use the same memories, and enter the key to unlock them.
 4. Run `/hooks`, review the MemBraince hooks, and trust them. Codex asks again whenever a hook changes.
 
 The installer saves the key in `~/.config/membraince/api-key`, readable by your account only, and installs
